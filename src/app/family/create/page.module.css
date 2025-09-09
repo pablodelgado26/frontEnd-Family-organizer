@@ -1,0 +1,201 @@
+.container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, var(--very-light-blue) 0%, var(--light-blue) 100%);
+  padding: 20px;
+}
+
+.header {
+  margin-bottom: 40px;
+}
+
+.backLink {
+  color: var(--primary-blue);
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.backLink:hover {
+  color: var(--secondary-blue);
+}
+
+.formContainer {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: calc(100vh - 120px);
+}
+
+.formCard {
+  background: var(--white);
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  padding: 40px;
+  width: 100%;
+  max-width: 600px;
+}
+
+.cardHeader {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--secondary-blue);
+  margin-bottom: 16px;
+}
+
+.subtitle {
+  font-size: 1.1rem;
+  color: var(--gray-600);
+  line-height: 1.6;
+}
+
+.form {
+  margin-bottom: 40px;
+}
+
+.info {
+  border-top: 1px solid var(--gray-200);
+  padding-top: 30px;
+}
+
+.info h3 {
+  color: var(--secondary-blue);
+  margin-bottom: 20px;
+  font-size: 1.2rem;
+}
+
+.infoList {
+  list-style: none;
+  padding: 0;
+}
+
+.infoList li {
+  padding: 8px 0;
+  color: var(--gray-700);
+  font-size: 1rem;
+}
+
+/* Success State */
+.successCard {
+  background: var(--white);
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  padding: 60px 40px;
+  text-align: center;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  margin-top: 10vh;
+}
+
+.successIcon {
+  font-size: 4rem;
+  margin-bottom: 24px;
+}
+
+.inviteSection {
+  background: var(--very-light-blue);
+  border-radius: 12px;
+  padding: 30px;
+  margin: 40px 0;
+}
+
+.inviteSection h2 {
+  color: var(--secondary-blue);
+  margin-bottom: 20px;
+  font-size: 1.3rem;
+}
+
+.codeContainer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--white);
+  padding: 16px;
+  border-radius: 8px;
+  border: 2px solid var(--primary-blue);
+  margin-bottom: 16px;
+}
+
+.inviteCode {
+  font-family: monospace;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--secondary-blue);
+  flex: 1;
+  text-align: left;
+}
+
+.copyButton {
+  background: var(--primary-blue);
+  color: var(--white);
+  border: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.copyButton:hover {
+  background: var(--secondary-blue);
+}
+
+.codeInfo {
+  color: var(--gray-600);
+  font-size: 0.9rem;
+}
+
+.actions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .formCard, .successCard {
+    padding: 30px 20px;
+    margin: 0 10px;
+  }
+  
+  .title {
+    font-size: 2rem;
+  }
+  
+  .codeContainer {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .inviteCode {
+    text-align: center;
+  }
+  
+  .actions {
+    flex-direction: column;
+  }
+  
+  .actions a, .actions button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 10px;
+  }
+  
+  .title {
+    font-size: 1.8rem;
+  }
+  
+  .subtitle {
+    font-size: 1rem;
+  }
+}
