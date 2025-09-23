@@ -430,3 +430,117 @@
     gap: 8px;
   }
 }
+
+/* Novos estilos para integração com backend */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  font-size: 1.125rem;
+  color: var(--primary-blue);
+}
+
+.error {
+  background-color: #fef2f2;
+  color: #dc2626;
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid #fecaca;
+  margin: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.retryBtn {
+  background: #dc2626;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.retryBtn:hover {
+  background: #b91c1c;
+}
+
+.groupSelector {
+  margin-top: 8px;
+  padding: 4px 8px;
+  border: 1px solid var(--gray-300);
+  border-radius: 4px;
+  background: white;
+  font-size: 0.875rem;
+}
+
+.welcomeText {
+  color: var(--gray-600);
+  font-weight: 500;
+}
+
+.userDropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: white;
+  border: 1px solid var(--gray-200);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease;
+}
+
+.userMenu:hover .userDropdown {
+  opacity: 1;
+  visibility: visible;
+}
+
+.logoutBtn {
+  background: none;
+  border: none;
+  padding: 12px 16px;
+  color: var(--error);
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  font-size: 0.875rem;
+}
+
+.logoutBtn:hover {
+  background: var(--gray-50);
+}
+
+.emptyState {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--gray-500);
+}
+
+.addButton {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 8px 16px;
+  background: var(--primary-blue);
+  color: white;
+  text-decoration: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  transition: background-color 0.3s ease;
+}
+
+.addButton:hover {
+  background: var(--secondary-blue);
+}
+
+.notePriority {
+  background: var(--light-blue);
+  color: var(--secondary-blue);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}

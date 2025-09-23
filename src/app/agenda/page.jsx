@@ -1,48 +1,27 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useAuth } from '../../contexts/AuthContext';
+import { useFamily } from '../../contexts/FamilyContext';
+import { appointmentService, eventService } from '../../services/api';
+import ProtectedRoute from '../../components/ProtectedRoute';
 import styles from './page.module.css';
 
-export default function Agenda() {
+function AgendaContent() {
+  const router = useRouter();
+  const { user } = useAuth();
+  const { currentGroup } = useFamily();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState('month'); // month, week, day
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState('consulta'); // consulta, evento
-  const [events, setEvents] = useState([
-    {
-      id: 1,
-      type: 'consulta',
-      title: 'Consulta Pediatra - Pedro',
-      date: '2025-09-15',
-      time: '14:30',
-      location: 'Clínica São José',
-      doctor: 'Dr. Carlos Mendes',
-      member: 'Pedro Silva',
-      notes: 'Consulta de rotina'
-    },
-    {
-      id: 2,
-      type: 'evento',
-      title: 'Aniversário da Vovó',
-      date: '2025-09-18',
-      time: '19:00',
-      location: 'Casa da Família',
-      description: 'Festa de 80 anos da vovó Maria'
-    },
-    {
-      id: 3,
-      type: 'consulta',
-      title: 'Dentista - Maria',
-      date: '2025-09-20',
-      time: '09:00',
-      location: 'OdontoClinic',
-      doctor: 'Dra. Ana Santos',
-      member: 'Maria Silva',
-      notes: 'Limpeza e revisão'
-    }
-  ]);
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
     type: 'consulta',
@@ -51,10 +30,51 @@ export default function Agenda() {
     time: '',
     location: '',
     doctor: '',
-    member: '',
     notes: '',
     description: ''
   });
+
+  // Carregar eventos e consultas
+  const loadEvents = async () => {
+    if (!currentGroup) return;
+
+    try {
+      setLoading(true);
+      setError('');
+
+      const [appointmentsResponse, eventsResponse] = await Promise.all([
+        appointmentService.getGroupAppointments(currentGroup.id),
+        eventService.getGroupEvents(currentGroup.id)
+      ]);
+
+      const appointments = appointmentsResponse.data.map(apt => ({
+        ...apt,
+        type: 'consulta',
+        title: apt.title,
+        member: apt.member || 'Não especificado'
+      }));
+
+      const eventsList = eventsResponse.data.map(evt => ({
+        ...evt,
+        type: 'evento',
+        title: evt.title,
+        description: evt.description || ''
+      }));
+
+      setEvents([...appointments, ...eventsList]);
+    } catch (error) {
+      console.error('Erro ao carregar agenda:', error);
+      setError('Erro ao carregar agenda');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (currentGroup) {
+      loadEvents();
+    }
+  }, [currentGroup]);
 
   const monthNames = [
     "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
@@ -68,39 +88,61 @@ export default function Agenda() {
       ...formData,
       [e.target.name]: e.target.value
     });
+    if (error) setError('');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const newEvent = {
-      id: Date.now(),
-      type: formData.type,
-      title: formData.title,
-      date: formData.date,
-      time: formData.time,
-      location: formData.location,
-      ...(formData.type === 'consulta' ? {
-        doctor: formData.doctor,
-        member: formData.member,
-        notes: formData.notes
-      } : {
-        description: formData.description
-      })
-    };
+    if (!currentGroup) return;
 
-    setEvents([...events, newEvent]);
-    setFormData({
-      type: 'consulta',
-      title: '',
-      date: '',
-      time: '',
-      location: '',
-      doctor: '',
-      member: '',
-      notes: '',
-      description: ''
-    });
-    setShowModal(false);
+    setIsSubmitting(true);
+    setError('');
+
+    try {
+      if (formData.type === 'consulta') {
+        await appointmentService.createAppointment({
+          title: formData.title,
+          doctor: formData.doctor,
+          location: formData.location,
+          date: formData.date,
+          time: formData.time,
+          description: formData.notes,
+          familyGroupId: currentGroup.id
+        });
+      } else {
+        await eventService.createEvent({
+          title: formData.title,
+          description: formData.description,
+          date: formData.date,
+          time: formData.time,
+          location: formData.location,
+          type: 'OTHER',
+          familyGroupId: currentGroup.id
+        });
+      }
+
+      // Recarregar eventos
+      await loadEvents();
+      
+      // Resetar form e fechar modal
+      setFormData({
+        type: 'consulta',
+        title: '',
+        date: '',
+        time: '',
+        location: '',
+        doctor: '',
+        notes: '',
+        description: ''
+      });
+      setShowModal(false);
+
+    } catch (error) {
+      console.error('Erro ao criar evento:', error);
+      setError(error.response?.data?.message || 'Erro ao criar evento');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const openModal = (type) => {
@@ -207,6 +249,24 @@ export default function Agenda() {
         </div>
       </header>
 
+      {/* Loading e Error States */}
+      {loading && (
+        <div className={styles.loading}>
+          Carregando agenda...
+        </div>
+      )}
+
+      {error && (
+        <div className={styles.error}>
+          {error}
+          <button onClick={loadEvents} className={styles.retryBtn}>
+            Tentar novamente
+          </button>
+        </div>
+      )}
+
+      {!loading && !error && (
+
       <div className={styles.agendaLayout}>
         {/* Calendar */}
         <div className={styles.calendarSection}>
@@ -298,6 +358,8 @@ export default function Agenda() {
         </div>
       </div>
 
+      )}
+
       {/* Modal */}
       {showModal && (
         <div className={styles.modalOverlay} onClick={() => setShowModal(false)}>
@@ -315,6 +377,12 @@ export default function Agenda() {
             </div>
 
             <form onSubmit={handleSubmit} className={styles.modalForm}>
+              {error && (
+                <div className={styles.modalError}>
+                  {error}
+                </div>
+              )}
+
               <div className="form-group">
                 <label htmlFor="title">Título</label>
                 <input
@@ -423,11 +491,24 @@ export default function Agenda() {
               )}
 
               <div className={styles.modalActions}>
-                <button type="button" onClick={() => setShowModal(false)} className="btn btn-secondary">
+                <button 
+                  type="button" 
+                  onClick={() => setShowModal(false)} 
+                  className="btn btn-secondary"
+                  disabled={isSubmitting}
+                >
                   Cancelar
                 </button>
-                <button type="submit" className="btn btn-primary">
-                  {modalType === 'consulta' ? 'Agendar Consulta' : 'Criar Evento'}
+                <button 
+                  type="submit" 
+                  className="btn btn-primary"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    modalType === 'consulta' ? 'Agendando...' : 'Criando...'
+                  ) : (
+                    modalType === 'consulta' ? 'Agendar Consulta' : 'Criar Evento'
+                  )}
                 </button>
               </div>
             </form>
@@ -435,5 +516,13 @@ export default function Agenda() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function Agenda() {
+  return (
+    <ProtectedRoute>
+      <AgendaContent />
+    </ProtectedRoute>
   );
 }

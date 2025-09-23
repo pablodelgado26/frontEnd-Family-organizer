@@ -1,11 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useAuth } from '../contexts/AuthContext';
 import styles from './page.module.css';
 
 export default function HomePage() {
+  const router = useRouter();
+  const { login, register, user, loading } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -13,26 +19,91 @@ export default function HomePage() {
     gender: ''
   });
 
+  // Redirecionar se já estiver logado
+  useEffect(() => {
+    if (!loading && user) {
+      router.push('/dashboard');
+    }
+  }, [user, loading, router]);
+
+  // Não mostrar nada enquanto carrega ou se já estiver logado
+  if (loading || user) {
+    return <div className={styles.loading}>Carregando...</div>;
+  }
+
   const handleInputChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
     });
+    // Limpar erro quando começar a digitar
+    if (error) setError('');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Aqui você integrará com o backend
-    console.log('Dados do formulário:', formData);
-    
-    // Simular login/registro bem-sucedido
-    if (isLogin) {
-      // Redirecionar para o dashboard após login
-      window.location.href = '/dashboard';
-    } else {
-      // Redirecionar para criação da família após registro
-      window.location.href = '/family/create';
+    setIsSubmitting(true);
+    setError('');
+
+    try {
+      if (isLogin) {
+        // Fazer login
+        const result = await login(formData.email, formData.password);
+        
+        if (result.success) {
+          router.push('/dashboard');
+        } else {
+          setError(result.error);
+        }
+      } else {
+        // Fazer registro
+        // Converter gênero para o formato esperado pelo backend (M/F)
+        let genderCode = '';
+        switch (formData.gender) {
+          case 'masculino':
+            genderCode = 'M';
+            break;
+          case 'feminino':
+            genderCode = 'F';
+            break;
+          default:
+            genderCode = 'M'; // Default
+        }
+
+        const result = await register(
+          formData.name, 
+          formData.email, 
+          formData.password, 
+          genderCode
+        );
+        
+        if (result.success) {
+          router.push('/family/create');
+        } else {
+          setError(result.error);
+        }
+      }
+    } catch (error) {
+      setError('Erro de conexão. Tente novamente.');
+      console.error('Erro na autenticação:', error);
+    } finally {
+      setIsSubmitting(false);
     }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      email: '',
+      password: '',
+      gender: ''
+    });
+    setError('');
+  };
+
+  const toggleForm = (loginMode) => {
+    setIsLogin(loginMode);
+    resetForm();
   };
 
   return (
@@ -72,17 +143,25 @@ export default function HomePage() {
           <div className={styles.formTabs}>
             <button 
               className={`${styles.tab} ${isLogin ? styles.activeTab : ''}`}
-              onClick={() => setIsLogin(true)}
+              onClick={() => toggleForm(true)}
+              type="button"
             >
               Entrar
             </button>
             <button 
               className={`${styles.tab} ${!isLogin ? styles.activeTab : ''}`}
-              onClick={() => setIsLogin(false)}
+              onClick={() => toggleForm(false)}
+              type="button"
             >
               Criar Conta
             </button>
           </div>
+
+          {error && (
+            <div className={styles.error}>
+              {error}
+            </div>
+          )}
 
           <form className={styles.form} onSubmit={handleSubmit}>
             {!isLogin && (
@@ -123,6 +202,7 @@ export default function HomePage() {
                 onChange={handleInputChange}
                 required
                 placeholder="Digite sua senha"
+                minLength="6"
               />
             </div>
 
@@ -140,13 +220,21 @@ export default function HomePage() {
                   <option value="masculino">Masculino</option>
                   <option value="feminino">Feminino</option>
                   <option value="outro">Outro</option>
-                  <option value="prefiro-nao-dizer">Prefiro não dizer</option>
                 </select>
               </div>
             )}
 
-            <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>
-              {isLogin ? 'Entrar' : 'Criar Conta'}
+            <button 
+              type="submit" 
+              className="btn btn-primary" 
+              style={{ width: '100%' }}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                isLogin ? 'Entrando...' : 'Criando conta...'
+              ) : (
+                isLogin ? 'Entrar' : 'Criar Conta'
+              )}
             </button>
           </form>
 

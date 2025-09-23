@@ -435,3 +435,56 @@
     padding: 4px;
   }
 }
+
+/* Novos estilos para integração com backend */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  font-size: 1.125rem;
+  color: var(--primary-blue);
+}
+
+.error {
+  background-color: #fef2f2;
+  color: #dc2626;
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid #fecaca;
+  margin: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.retryBtn {
+  background: #dc2626;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.retryBtn:hover {
+  background: #b91c1c;
+}
+
+.modalError {
+  background-color: #fef2f2;
+  color: #dc2626;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid #fecaca;
+  margin-bottom: 20px;
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+/* Estilos para botão desabilitado */
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
