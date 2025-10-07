@@ -1,54 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import api from '@/services/api';
+import ProtectedRoute from '@/components/ProtectedRoute';
 import styles from './page.module.css';
 
 export default function Notes() {
-  const [notes, setNotes] = useState([
-    {
-      id: 1,
-      title: 'Lista de compras da semana',
-      content: 'Leite, pão, frutas (maçã, banana), detergente, papel higiênico, frango, arroz, feijão, óleo.',
-      author: 'Maria Silva',
-      date: '2025-09-10T10:30:00',
-      category: 'compras',
-      pinned: true
-    },
-    {
-      id: 2,
-      title: 'Reunião escolar - Pedro',
-      content: 'Reunião na escola do Pedro dia 25/09 às 19h. Assuntos: apresentação do trimestre, eventos do mês, projeto de ciências.',
-      author: 'João Silva',
-      date: '2025-09-09T15:45:00',
-      category: 'escola',
-      pinned: false
-    },
-    {
-      id: 3,
-      title: 'Receita do bolo da vovó',
-      content: '3 ovos, 2 xícaras de açúcar, 1 xícara de óleo, 3 xícaras de farinha, 1 colher de fermento. Misturar tudo e assar por 40min a 180°C.',
-      author: 'Ana Silva',
-      date: '2025-09-08T20:15:00',
-      category: 'receitas',
-      pinned: false
-    },
-    {
-      id: 4,
-      title: 'Medicamentos da família',
-      content: 'João - Losartana (manhã), Maria - Vitamina D (3x semana), Pedro - não toma nada, Ana - Complexo B (diário)',
-      author: 'Maria Silva',
-      date: '2025-09-07T08:00:00',
-      category: 'saude',
-      pinned: true
-    }
-  ]);
-
+  const [notes, setNotes] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingNote, setEditingNote] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('todas');
-  const [sortBy, setSortBy] = useState('date'); // date, title, author
+  const [sortBy, setSortBy] = useState('date');
 
   const [formData, setFormData] = useState({
     title: '',
@@ -57,14 +22,43 @@ export default function Notes() {
     pinned: false
   });
 
+  // Buscar notas do backend
+  useEffect(() => {
+    fetchNotes();
+  }, []);
+
+  const fetchNotes = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      const user = JSON.parse(localStorage.getItem('user'));
+      const familyGroupId = user?.familyGroupId;
+
+      if (!familyGroupId) {
+        alert('Você precisa fazer parte de um grupo familiar para ver as notas');
+        setLoading(false);
+        return;
+      }
+
+      const response = await api.get(`/notes/group/${familyGroupId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setNotes(response.data.notes || response.data || []);
+    } catch (error) {
+      console.error('Erro ao buscar notas:', error);
+      alert('Erro ao carregar notas');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const categories = [
     { id: 'todas', name: 'Todas', icon: '📝' },
     { id: 'geral', name: 'Geral', icon: '📄' },
     { id: 'compras', name: 'Compras', icon: '🛒' },
     { id: 'escola', name: 'Escola', icon: '🎓' },
     { id: 'saude', name: 'Saúde', icon: '🏥' },
-    { id: 'receitas', name: 'Receitas', icon: '👩‍🍳' },
-    { id: 'tarefas', name: 'Tarefas', icon: '✅' },
+    { id: 'trabalho', name: 'Trabalho', icon: '💼' },
     { id: 'financas', name: 'Finanças', icon: '💰' }
   ];
 
@@ -76,36 +70,56 @@ export default function Notes() {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (editingNote) {
-      setNotes(prev => prev.map(note =>
-        note.id === editingNote.id
-          ? {
-              ...note,
-              title: formData.title,
-              content: formData.content,
-              category: formData.category,
-              pinned: formData.pinned,
-              updatedAt: new Date().toISOString()
-            }
-          : note
-      ));
-    } else {
-      const newNote = {
-        id: Date.now(),
-        title: formData.title,
-        content: formData.content,
-        author: 'Usuário Atual', // Seria pego do contexto de autenticação
-        date: new Date().toISOString(),
-        category: formData.category,
-        pinned: formData.pinned
-      };
-      setNotes(prev => [newNote, ...prev]);
-    }
+    try {
+      const token = localStorage.getItem('token');
+      const user = JSON.parse(localStorage.getItem('user'));
+      const familyGroupId = user?.familyGroupId;
 
-    resetForm();
+      if (!familyGroupId) {
+        alert('Você precisa fazer parte de um grupo familiar');
+        return;
+      }
+      
+      if (editingNote) {
+        // Atualizar nota existente
+        await api.put(`/notes/${editingNote.id}`, 
+          {
+            title: formData.title,
+            content: formData.content,
+            priority: formData.pinned ? 'alta' : 'normal',
+            category: formData.category
+          },
+          {
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        );
+        alert('Nota atualizada com sucesso!');
+      } else {
+        // Criar nova nota
+        await api.post('/notes', 
+          {
+            title: formData.title,
+            content: formData.content,
+            priority: formData.pinned ? 'alta' : 'normal',
+            category: formData.category,
+            familyGroupId: familyGroupId
+          },
+          {
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        );
+        alert('Nota criada com sucesso!');
+      }
+
+      await fetchNotes(); // Recarregar notas
+      resetForm();
+    } catch (error) {
+      console.error('Erro ao salvar nota:', error);
+      alert(error.response?.data?.error || 'Erro ao salvar nota');
+    }
   };
 
   const resetForm = () => {
@@ -124,22 +138,51 @@ export default function Notes() {
     setFormData({
       title: note.title,
       content: note.content,
-      category: note.category,
-      pinned: note.pinned
+      category: note.category || 'geral',
+      pinned: note.priority === 'alta'
     });
     setShowModal(true);
   };
 
-  const deleteNote = (noteId) => {
+  const deleteNote = async (noteId) => {
     if (confirm('Tem certeza que deseja excluir esta anotação?')) {
-      setNotes(prev => prev.filter(note => note.id !== noteId));
+      try {
+        const token = localStorage.getItem('token');
+        await api.delete(`/notes/${noteId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        alert('Nota excluída com sucesso!');
+        await fetchNotes();
+      } catch (error) {
+        console.error('Erro ao excluir nota:', error);
+        alert('Erro ao excluir nota');
+      }
     }
   };
 
-  const togglePin = (noteId) => {
-    setNotes(prev => prev.map(note =>
-      note.id === noteId ? { ...note, pinned: !note.pinned } : note
-    ));
+  const togglePin = async (noteId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const note = notes.find(n => n.id === noteId);
+      
+      // Alternar entre alta e normal
+      const newPriority = note.priority === 'alta' ? 'normal' : 'alta';
+      
+      await api.put(`/notes/${noteId}`, 
+        { 
+          title: note.title,
+          content: note.content,
+          category: note.category,
+          priority: newPriority
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      await fetchNotes();
+    } catch (error) {
+      console.error('Erro ao fixar/desafixar nota:', error);
+      alert('Erro ao atualizar nota');
+    }
   };
 
   const formatDate = (dateString) => {
@@ -186,41 +229,46 @@ export default function Notes() {
       return matchesSearch && matchesCategory;
     })
     .sort((a, b) => {
-      if (a.pinned && !b.pinned) return -1;
-      if (!a.pinned && b.pinned) return 1;
+      // Prioridade alta sempre no topo
+      if (a.priority === 'alta' && b.priority !== 'alta') return -1;
+      if (a.priority !== 'alta' && b.priority === 'alta') return 1;
       
       switch (sortBy) {
         case 'title':
           return a.title.localeCompare(b.title);
         case 'author':
-          return a.author.localeCompare(b.author);
+          return (a.author || '').localeCompare(b.author || '');
         case 'date':
         default:
-          return new Date(b.date) - new Date(a.date);
+          return new Date(b.createdAt) - new Date(a.createdAt);
       }
     });
 
   return (
-    <div className={styles.container}>
-      {/* Header */}
-      <header className={styles.header}>
-        <div className={styles.headerContent}>
-          <div>
-            <Link href="/dashboard" className={styles.backLink}>← Voltar ao Painel</Link>
-            <h1 className={styles.title}>Anotações da Família</h1>
+    <ProtectedRoute>
+      <div className={styles.container}>
+        {/* Header */}
+        <header className={styles.header}>
+          <div className={styles.headerContent}>
+            <div>
+              <Link href="/dashboard" className={styles.backLink}>← Voltar ao Painel</Link>
+              <h1 className={styles.title}>Anotações da Família</h1>
+            </div>
+            <button 
+              onClick={() => setShowModal(true)} 
+              className="btn btn-primary"
+            >
+              + Nova Anotação
+            </button>
           </div>
-          <button 
-            onClick={() => setShowModal(true)} 
-            className="btn btn-primary"
-          >
-            + Nova Anotação
-          </button>
-        </div>
-      </header>
+        </header>
 
-      <div className={styles.notesLayout}>
-        {/* Sidebar */}
-        <aside className={styles.sidebar}>
+        {loading ? (
+          <div className={styles.loading}>Carregando notas...</div>
+        ) : (
+          <div className={styles.notesLayout}>
+            {/* Sidebar */}
+            <aside className={styles.sidebar}>
           <div className={styles.searchSection}>
             <input
               type="text"
@@ -306,8 +354,8 @@ export default function Notes() {
                     <div className={styles.noteActions}>
                       <button
                         onClick={() => togglePin(note.id)}
-                        className={`${styles.pinButton} ${note.pinned ? styles.pinned : ''}`}
-                        title={note.pinned ? 'Desafixar' : 'Fixar'}
+                        className={`${styles.pinButton} ${note.priority === 'alta' ? styles.pinned : ''}`}
+                        title={note.priority === 'alta' ? 'Desafixar' : 'Fixar'}
                       >
                         📌
                       </button>
@@ -333,10 +381,10 @@ export default function Notes() {
                   
                   <div className={styles.noteFooter}>
                     <div className={styles.noteAuthor}>
-                      <span>Por {note.author}</span>
+                      <span>Por {note.author || 'Desconhecido'}</span>
                     </div>
                     <div className={styles.noteDate}>
-                      {formatRelativeDate(note.date)}
+                      {formatRelativeDate(note.createdAt || note.date)}
                     </div>
                   </div>
                 </div>
@@ -344,10 +392,11 @@ export default function Notes() {
             </div>
           )}
         </main>
-      </div>
+          </div>
+        )}
 
-      {/* Modal */}
-      {showModal && (
+        {/* Modal */}
+        {showModal && (
         <div className={styles.modalOverlay} onClick={() => resetForm()}>
           <div className={styles.modal} onClick={e => e.stopPropagation()}>
             <div className={styles.modalHeader}>
@@ -423,6 +472,7 @@ export default function Notes() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </ProtectedRoute>
   );
 }

@@ -3,20 +3,28 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import axios from 'axios';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useFamily } from '../../../contexts/FamilyContext';
-import { familyGroupService } from '../../../services/api';
 import ProtectedRoute from '../../../components/ProtectedRoute';
 import SuccessModal from './SuccessModal';
 import styles from './page.module.css';
+
+// Configuração do axios
+const api = axios.create({
+  baseURL: 'http://localhost:4000',
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
 function CreateFamilyContent() {
   const router = useRouter();
   const { user } = useAuth();
   const { refreshGroups } = useFamily();
   const [formData, setFormData] = useState({
-    familyName: '',
-    description: ''
+    familyName: ''
   });
   const [inviteCode, setInviteCode] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
@@ -38,12 +46,15 @@ function CreateFamilyContent() {
     setError('');
 
     try {
-      const response = await familyGroupService.createGroup({
-        name: formData.familyName,
-        description: formData.description
+      const token = localStorage.getItem('token');
+      const response = await api.post('/family-groups', {
+        name: formData.familyName
+      }, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
 
-      const newGroup = response.data;
+      // A API retorna { message: "...", familyGroup: { id, name, inviteCode, ... } }
+      const newGroup = response.data.familyGroup || response.data;
       setInviteCode(newGroup.inviteCode);
       setShowSuccess(true);
       
@@ -66,7 +77,14 @@ function CreateFamilyContent() {
     setError('');
 
     try {
-      const response = await familyGroupService.joinGroup(joinCode.trim().toUpperCase());
+      const token = localStorage.getItem('token');
+      
+      // Usar apenas o endpoint de código temporário
+      const response = await api.post('/family-groups/join-temp', {
+        tempInviteCode: joinCode.trim().toUpperCase()
+      }, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
       
       // Atualizar lista de grupos
       await refreshGroups();
@@ -76,57 +94,23 @@ function CreateFamilyContent() {
       
     } catch (error) {
       console.error('Erro ao entrar na família:', error);
-      setError(error.response?.data?.message || 'Código inválido ou erro ao entrar na família');
+      setError(error.response?.data?.message || 'Código inválido ou expirado');
     } finally {
       setIsLoading(false);
     }
   };
 
   const resetForm = () => {
-    setFormData({ familyName: '', description: '' });
+    setFormData({ familyName: '' });
     setInviteCode('');
     setShowSuccess(false);
     setError('');
   };
 
-  if (isCreated) {
-    return (
-      <div className={styles.container}>
-        <div className={styles.successCard}>
-          <div className={styles.successIcon}>🎉</div>
-          <h1 className={styles.title}>Família criada com sucesso!</h1>
-          <p className={styles.subtitle}>
-            A {formData.familyName} foi criada. Agora você pode convidar outros membros.
-          </p>
-          
-          <div className={styles.inviteSection}>
-            <h2>Convite para a família</h2>
-            <div className={styles.codeContainer}>
-              <span className={styles.inviteCode}>{inviteCode}</span>
-              <button onClick={copyToClipboard} className={styles.copyButton}>
-                📋 Copiar
-              </button>
-            </div>
-            <p className={styles.codeInfo}>
-              Compartilhe este código com os membros da sua família para que possam se juntar ao grupo.
-            </p>
-          </div>
-
-          <div className={styles.actions}>
-            <Link href="/dashboard" className="btn btn-primary">
-              Ir para o Painel
-            </Link>
-            <button 
-              onClick={() => setIsCreated(false)} 
-              className="btn btn-secondary"
-            >
-              Criar Outra Família
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(inviteCode);
+    alert('Código copiado para a área de transferência!');
+  };
 
   return (
     <>
@@ -173,18 +157,6 @@ function CreateFamilyContent() {
                   />
                 </div>
 
-                <div className="form-group">
-                  <label htmlFor="description">Descrição (opcional)</label>
-                  <textarea
-                    id="description"
-                    name="description"
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    rows={3}
-                    placeholder="Uma breve descrição sobre sua família..."
-                  />
-                </div>
-
                 <button 
                   type="submit" 
                   className="btn btn-primary" 
@@ -201,12 +173,14 @@ function CreateFamilyContent() {
             <div className={styles.optionCard}>
               <h2 className={styles.optionTitle}>Entrar numa Família</h2>
               <p className={styles.optionDescription}>
-                Já tem um código de convite? Digite abaixo para entrar.
+                Peça ao administrador do grupo para gerar um código de convite temporário.
               </p>
 
               <form className={styles.form} onSubmit={handleJoinGroup}>
                 <div className="form-group">
-                  <label htmlFor="joinCode">Código de convite</label>
+                  <label htmlFor="joinCode">
+                    Código de Convite (6 caracteres)
+                  </label>
                   <input
                     type="text"
                     id="joinCode"
@@ -216,10 +190,13 @@ function CreateFamilyContent() {
                       if (error) setError('');
                     }}
                     required
-                    placeholder="Ex: GARCIA01, SILVA01..."
-                    maxLength={8}
+                    placeholder="Ex: ABC123"
+                    maxLength={6}
                     style={{ textTransform: 'uppercase' }}
                   />
+                  <small style={{ color: 'var(--gray-600)', fontSize: '0.85rem', marginTop: '8px', display: 'block' }}>
+                    ⏱️ Códigos são válidos por apenas 15 minutos
+                  </small>
                 </div>
 
                 <button 

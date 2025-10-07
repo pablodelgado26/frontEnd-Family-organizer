@@ -3,11 +3,20 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import axios from 'axios';
 import { useAuth } from '../../contexts/AuthContext';
 import { useFamily } from '../../contexts/FamilyContext';
-import { appointmentService, eventService } from '../../services/api';
 import ProtectedRoute from '../../components/ProtectedRoute';
 import styles from './page.module.css';
+
+// Configuração do axios
+const api = axios.create({
+  baseURL: 'http://localhost:4000',
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
 function AgendaContent() {
   const router = useRouter();
@@ -42,19 +51,30 @@ function AgendaContent() {
       setLoading(true);
       setError('');
 
+      const token = localStorage.getItem('token');
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
       const [appointmentsResponse, eventsResponse] = await Promise.all([
-        appointmentService.getGroupAppointments(currentGroup.id),
-        eventService.getGroupEvents(currentGroup.id)
+        api.get(`/appointments/group/${currentGroup.id}`, { headers }).catch(() => ({ data: [] })),
+        api.get(`/events/group/${currentGroup.id}`, { headers }).catch(() => ({ data: [] }))
       ]);
 
-      const appointments = appointmentsResponse.data.map(apt => ({
+      // Garantir que sejam arrays
+      const appointmentsData = Array.isArray(appointmentsResponse?.data) 
+        ? appointmentsResponse.data 
+        : [];
+      const eventsData = Array.isArray(eventsResponse?.data) 
+        ? eventsResponse.data 
+        : [];
+
+      const appointments = appointmentsData.map(apt => ({
         ...apt,
         type: 'consulta',
         title: apt.title,
         member: apt.member || 'Não especificado'
       }));
 
-      const eventsList = eventsResponse.data.map(evt => ({
+      const eventsList = eventsData.map(evt => ({
         ...evt,
         type: 'evento',
         title: evt.title,
@@ -99,8 +119,11 @@ function AgendaContent() {
     setError('');
 
     try {
+      const token = localStorage.getItem('token');
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
       if (formData.type === 'consulta') {
-        await appointmentService.createAppointment({
+        await api.post('/appointments', {
           title: formData.title,
           doctor: formData.doctor,
           location: formData.location,
@@ -108,17 +131,17 @@ function AgendaContent() {
           time: formData.time,
           description: formData.notes,
           familyGroupId: currentGroup.id
-        });
+        }, { headers });
       } else {
-        await eventService.createEvent({
+        await api.post('/events', {
           title: formData.title,
           description: formData.description,
           date: formData.date,
           time: formData.time,
           location: formData.location,
-          type: 'OTHER',
+          type: 'outro',
           familyGroupId: currentGroup.id
-        });
+        }, { headers });
       }
 
       // Recarregar eventos

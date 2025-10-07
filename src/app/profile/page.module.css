@@ -1,0 +1,197 @@
+/* ========================================
+   CONTAINER E LAYOUT
+   ======================================== */
+.container {
+  min-height: 100vh;
+  padding: var(--spacing-lg);
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.header {
+  margin-bottom: var(--spacing-xl);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--spacing);
+}
+
+.backLink {
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
+  transition: var(--transition);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing);
+  border-radius: var(--radius);
+}
+
+.backLink:hover {
+  background: var(--primary-light);
+  transform: translateX(-4px);
+}
+
+.pageTitle {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--gray-900);
+  margin: 0;
+}
+
+/* ========================================
+   CONTENT GRID
+   ======================================== */
+.content {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: var(--spacing-xl);
+  align-items: start;
+}
+
+/* ========================================
+   HEADER DO PERFIL
+   ======================================== */
+.profileHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xl);
+  padding: var(--spacing-xl);
+  background: var(--gradient-primary);
+  border-radius: var(--radius-md);
+  margin: calc(var(--spacing-lg) * -1);
+  margin-bottom: var(--spacing-xl);
+  color: var(--white);
+}
+
+.avatarSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing);
+}
+
+.avatar,
+.avatarPlaceholder {
+  width: 120px;
+  height: 120px;
+  border-radius: var(--radius-full);
+  object-fit: cover;
+  border: 4px solid var(--white);
+  box-shadow: var(--shadow-lg);
+}
+
+.avatarPlaceholder {
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  font-weight: 700;
+}
+
+.avatarActions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  min-width: 150px;
+}
+
+.profileInfo h2 {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0 0 var(--spacing-xs) 0;
+}
+
+.profileInfo p {
+  font-size: 16px;
+  opacity: 0.9;
+  margin: 0 0 var(--spacing) 0;
+}
+
+/* ========================================
+   FORMULÁRIO
+   ======================================== */
+.section {
+  padding: var(--spacing-lg);
+  background: var(--gray-50);
+  border-radius: var(--radius);
+  border: 1px solid var(--gray-200);
+}
+
+.sectionTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--gray-900);
+  margin: 0 0 var(--spacing-lg) 0;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+.actions {
+  display: flex;
+  gap: var(--spacing);
+  justify-content: flex-end;
+  padding-top: var(--spacing-lg);
+  border-top: 2px solid var(--gray-100);
+}
+
+/* ========================================
+   CARD DE INFORMAÇÕES
+   ======================================== */
+.infoCard {
+  position: sticky;
+  top: var(--spacing-lg);
+}
+
+.infoTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--gray-900);
+  margin: 0 0 var(--spacing-md) 0;
+}
+
+.infoList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing);
+}
+
+.infoList li {
+  font-size: 14px;
+  color: var(--gray-600);
+  line-height: 1.6;
+}
+
+/* ========================================
+   RESPONSIVIDADE
+   ======================================== */
+@media (max-width: 1024px) {
+  .content {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .profileHeader {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+
+  .actions button {
+    width: 100%;
+  }
+}

@@ -1,0 +1,119 @@
+.familySelector {
+  position: relative;
+  width: 100%;
+  max-width: 300px;
+}
+
+.selectedFamily {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.selectedFamily:hover {
+  border-color: #4CAF50;
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.1);
+}
+
+.familyInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.familyName {
+  font-weight: 600;
+  color: #333;
+  font-size: 14px;
+}
+
+.membersCount {
+  font-size: 12px;
+  color: #666;
+}
+
+.dropdownArrow {
+  color: #999;
+  font-size: 12px;
+  transition: transform 0.2s ease;
+}
+
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
+}
+
+.dropdownMenu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 1000;
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdownItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  font-size: 14px;
+}
+
+.dropdownItem:hover {
+  background: #f5f5f5;
+}
+
+.dropdownItem.active {
+  background: #e8f5e9;
+  color: #4CAF50;
+  font-weight: 500;
+}
+
+.dropdownDivider {
+  height: 1px;
+  background: #eee;
+  margin: 4px 0;
+}
+
+.createFamily {
+  color: #4CAF50;
+  font-weight: 600;
+}
+
+.createFamily:hover {
+  background: #e8f5e9;
+}

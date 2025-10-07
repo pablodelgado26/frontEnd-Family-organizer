@@ -57,24 +57,11 @@ export default function HomePage() {
         }
       } else {
         // Fazer registro
-        // Converter gênero para o formato esperado pelo backend (M/F)
-        let genderCode = '';
-        switch (formData.gender) {
-          case 'masculino':
-            genderCode = 'M';
-            break;
-          case 'feminino':
-            genderCode = 'F';
-            break;
-          default:
-            genderCode = 'M'; // Default
-        }
-
         const result = await register(
           formData.name, 
           formData.email, 
           formData.password, 
-          genderCode
+          formData.gender // Enviar diretamente: "masculino", "feminino" ou "outro"
         );
         
         if (result.success) {

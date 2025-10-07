@@ -1,18 +1,27 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import axios from 'axios';
 import { useAuth } from '../../contexts/AuthContext';
 import { useFamily } from '../../contexts/FamilyContext';
-import { dashboardService, appointmentService, eventService, noteService, photoService } from '../../services/api';
 import ProtectedRoute from '../../components/ProtectedRoute';
 import styles from './page.module.css';
+
+// Configuração do axios
+const api = axios.create({
+  baseURL: 'http://localhost:4000',
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
 function DashboardContent() {
   const router = useRouter();
   const { user, logout } = useAuth();
-  const { currentGroup, groups, switchGroup } = useFamily();
+  const { currentGroup, groups, switchGroup, loading: familyLoading } = useFamily();
   const [dashboardData, setDashboardData] = useState({
     summary: null,
     todayAgenda: null,
@@ -21,37 +30,46 @@ function DashboardContent() {
   const [upcomingEvents, setUpcomingEvents] = useState([]);
   const [recentNotes, setRecentNotes] = useState([]);
   const [recentPhotos, setRecentPhotos] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(false);
   const [error, setError] = useState('');
+  const [groupSetupTimeout, setGroupSetupTimeout] = useState(false);
 
   // Carregar dados do dashboard
   const loadDashboardData = async () => {
     if (!currentGroup) return;
 
     try {
-      setLoading(true);
+      setDataLoading(true);
       setError('');
+
+      const token = localStorage.getItem('token');
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
       // Carregar dados em paralelo
       const [summaryResponse, todayResponse, statsResponse, upcomingAppts, upcomingEvts, notesResponse, photosResponse] = await Promise.all([
-        dashboardService.getDashboardSummary(currentGroup.id).catch(() => null),
-        dashboardService.getTodayAgenda(currentGroup.id).catch(() => null),
-        dashboardService.getGroupStats(currentGroup.id).catch(() => null),
-        appointmentService.getUpcomingAppointments(currentGroup.id).catch(() => ({ data: [] })),
-        eventService.getUpcomingEvents(currentGroup.id).catch(() => ({ data: [] })),
-        noteService.getGroupNotes(currentGroup.id).catch(() => ({ data: [] })),
-        photoService.getRecentPhotos(currentGroup.id).catch(() => ({ data: [] }))
+        api.get(`/dashboard/group/${currentGroup.id}`, { headers }).catch(() => null),
+        api.get(`/dashboard/group/${currentGroup.id}/today`, { headers }).catch(() => null),
+        api.get(`/dashboard/group/${currentGroup.id}/stats`, { headers }).catch(() => null),
+        api.get(`/appointments/group/${currentGroup.id}/upcoming`, { headers }).catch(() => ({ data: [] })),
+        api.get(`/events/group/${currentGroup.id}/upcoming`, { headers }).catch(() => ({ data: [] })),
+        api.get(`/notes/group/${currentGroup.id}`, { headers }).catch(() => ({ data: [] })),
+        api.get(`/photos/group/${currentGroup.id}/recent`, { headers }).catch(() => ({ data: [] }))
       ]);
 
       setDashboardData({
-        summary: summaryResponse?.data || null,
-        todayAgenda: todayResponse?.data || null,
-        stats: statsResponse?.data || null
+        summary: summaryResponse?.data?.summary || summaryResponse?.data || null,
+        todayAgenda: todayResponse?.data?.today || todayResponse?.data || null,
+        stats: statsResponse?.data?.stats || statsResponse?.data || null
       });
 
       // Combinar consultas e eventos próximos
-      const appointments = upcomingAppts.data || [];
-      const events = upcomingEvts.data || [];
+      // Garantir que appointments e events sejam sempre arrays
+      const appointments = Array.isArray(upcomingAppts?.data) 
+        ? upcomingAppts.data 
+        : [];
+      const events = Array.isArray(upcomingEvts?.data) 
+        ? upcomingEvts.data 
+        : [];
       
       const combinedEvents = [
         ...appointments.map(apt => ({
@@ -69,14 +87,23 @@ function DashboardContent() {
       ].sort((a, b) => new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`));
 
       setUpcomingEvents(combinedEvents.slice(0, 5));
-      setRecentNotes(notesResponse.data?.slice(0, 3) || []);
-      setRecentPhotos(photosResponse.data?.slice(0, 4) || []);
+      
+      // Garantir que notes e photos sejam arrays
+      const notes = Array.isArray(notesResponse?.data) 
+        ? notesResponse.data 
+        : [];
+      const photos = Array.isArray(photosResponse?.data) 
+        ? photosResponse.data 
+        : [];
+        
+      setRecentNotes(notes.slice(0, 3));
+      setRecentPhotos(photos.slice(0, 4));
 
     } catch (error) {
       console.error('Erro ao carregar dashboard:', error);
       setError('Erro ao carregar dados do dashboard');
     } finally {
-      setLoading(false);
+      setDataLoading(false);
     }
   };
 
@@ -87,11 +114,27 @@ function DashboardContent() {
   }, [currentGroup]);
 
   // Redirecionar se não há grupos
+  // Redirecionar se não há grupos: usar o loading do FamilyContext (familyLoading)
   useEffect(() => {
-    if (!loading && groups.length === 0 && currentGroup === null) {
+    if (!familyLoading && groups.length === 0 && currentGroup === null) {
       router.push('/family/create');
     }
-  }, [groups, currentGroup, loading, router]);
+  }, [groups, currentGroup, familyLoading, router]);
+
+  // Timeout para detectar se o grupo não está sendo configurado
+  // Timeout para detectar se o grupo não está sendo configurado — usar familyLoading
+  useEffect(() => {
+    if (!familyLoading && groups.length > 0 && !currentGroup) {
+      const timer = setTimeout(() => {
+        console.log('Dashboard: Timeout - grupo não foi configurado');
+        setGroupSetupTimeout(true);
+      }, 3000); // 3 segundos
+
+      return () => clearTimeout(timer);
+    } else {
+      setGroupSetupTimeout(false);
+    }
+  }, [familyLoading, groups, currentGroup]);
 
   const handleLogout = () => {
     logout();
@@ -115,7 +158,7 @@ function DashboardContent() {
     return type === 'consulta' ? 'var(--error)' : 'var(--success)';
   };
 
-  if (loading) {
+  if (dataLoading) {
     return (
       <div className={styles.loading}>
         Carregando dashboard...
@@ -124,6 +167,37 @@ function DashboardContent() {
   }
 
   if (!currentGroup) {
+    if (groupSetupTimeout) {
+      return (
+        <div className={styles.loading}>
+          <div style={{ textAlign: 'center' }}>
+            <p>Erro ao configurar grupo familiar.</p>
+            <p>Você tem {groups.length} grupo(s) disponível(is).</p>
+            <button 
+              onClick={() => {
+                if (groups.length > 0) {
+                  switchGroup(groups[0]);
+                } else {
+                  router.push('/family/create');
+                }
+              }}
+              style={{ 
+                marginTop: '20px', 
+                padding: '10px 20px', 
+                cursor: 'pointer',
+                backgroundColor: 'var(--primary-blue)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '5px'
+              }}
+            >
+              {groups.length > 0 ? 'Selecionar Grupo' : 'Criar Grupo'}
+            </button>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className={styles.loading}>
         Configurando seu grupo familiar...
@@ -157,6 +231,9 @@ function DashboardContent() {
             )}
           </div>
           <div className={styles.headerActions}>
+            <Link href="/family/manage" className={styles.manageBtn}>
+              🔗 Gerenciar Convites
+            </Link>
             <span className={styles.welcomeText}>
               Olá, {user?.name?.split(' ')[0] || 'Usuário'}!
             </span>
@@ -200,6 +277,9 @@ function DashboardContent() {
         </Link>
         <Link href="/gallery" className={styles.navItem}>
           📸 Galeria
+        </Link>
+        <Link href="/profile" className={styles.navItem}>
+          👤 Perfil
         </Link>
       </nav>
 

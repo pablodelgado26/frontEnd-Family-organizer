@@ -1,9 +1,15 @@
+/* ========================================
+   CONTAINER PRINCIPAL
+   ======================================== */
 .container {
   min-height: 100vh;
   background: linear-gradient(135deg, var(--very-light-blue) 0%, var(--light-blue) 100%);
   padding: 20px;
 }
 
+/* ========================================
+   HEADER E NAVEGAÇÃO
+   ======================================== */
 .header {
   margin-bottom: 40px;
 }
@@ -19,6 +25,9 @@
   color: var(--secondary-blue);
 }
 
+/* ========================================
+   LAYOUT DOS FORMULÁRIOS
+   ======================================== */
 .formContainer {
   display: flex;
   justify-content: center;
@@ -26,195 +35,40 @@
   min-height: calc(100vh - 120px);
 }
 
-.formCard {
-  background: var(--white);
-  border-radius: 16px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-  padding: 40px;
-  width: 100%;
-  max-width: 600px;
-}
-
-.cardHeader {
-  text-align: center;
-  margin-bottom: 40px;
-}
-
-.title {
-  font-size: 2.5rem;
-  font-weight: 800;
-  color: var(--secondary-blue);
-  margin-bottom: 16px;
-}
-
-.subtitle {
-  font-size: 1.1rem;
-  color: var(--gray-600);
-  line-height: 1.6;
-}
-
-.form {
-  margin-bottom: 40px;
-}
-
-.info {
-  border-top: 1px solid var(--gray-200);
-  padding-top: 30px;
-}
-
-.info h3 {
-  color: var(--secondary-blue);
-  margin-bottom: 20px;
-  font-size: 1.2rem;
-}
-
-.infoList {
-  list-style: none;
-  padding: 0;
-}
-
-.infoList li {
-  padding: 8px 0;
-  color: var(--gray-700);
-  font-size: 1rem;
-}
-
-/* Success State */
-.successCard {
-  background: var(--white);
-  border-radius: 16px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-  padding: 60px 40px;
-  text-align: center;
-  width: 100%;
-  max-width: 600px;
-  margin: 0 auto;
-  margin-top: 10vh;
-}
-
-.successIcon {
-  font-size: 4rem;
-  margin-bottom: 24px;
-}
-
-.inviteSection {
-  background: var(--very-light-blue);
-  border-radius: 12px;
-  padding: 30px;
-  margin: 40px 0;
-}
-
-.inviteSection h2 {
-  color: var(--secondary-blue);
-  margin-bottom: 20px;
-  font-size: 1.3rem;
-}
-
-.codeContainer {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: var(--white);
-  padding: 16px;
-  border-radius: 8px;
-  border: 2px solid var(--primary-blue);
-  margin-bottom: 16px;
-}
-
-.inviteCode {
-  font-family: monospace;
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: var(--secondary-blue);
-  flex: 1;
-  text-align: left;
-}
-
-.copyButton {
-  background: var(--primary-blue);
-  color: var(--white);
-  border: none;
-  padding: 10px 16px;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.copyButton:hover {
-  background: var(--secondary-blue);
-}
-
-.codeInfo {
-  color: var(--gray-600);
-  font-size: 0.9rem;
-}
-
-.actions {
-  display: flex;
-  gap: 16px;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-/* Mobile Responsiveness */
-@media (max-width: 768px) {
-  .formCard, .successCard {
-    padding: 30px 20px;
-    margin: 0 10px;
-  }
-  
-  .title {
-    font-size: 2rem;
-  }
-  
-  .codeContainer {
-    flex-direction: column;
-    gap: 16px;
-  }
-  
-  .inviteCode {
-    text-align: center;
-  }
-  
-  .actions {
-    flex-direction: column;
-  }
-  
-  .actions a, .actions button {
-    width: 100%;
-  }
-}
-
-@media (max-width: 480px) {
-  .container {
-    padding: 10px;
-  }
-  
-  .title {
-    font-size: 1.8rem;
-  }
-  
-  .subtitle {
-    font-size: 1rem;
-  }
-}
-
-/* Novos estilos para integração com backend */
 .optionsContainer {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   gap: 40px;
   align-items: flex-start;
-  max-width: 1000px;
+  max-width: 1200px;
   width: 100%;
 }
 
+.separator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gray-400);
+  font-weight: 600;
+  font-size: 1.2rem;
+  padding: 0 20px;
+  min-height: 200px;
+}
+
+/* ========================================
+   CARDS DE OPÇÕES
+   ======================================== */
 .optionCard {
   background: var(--white);
   border-radius: 16px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-  padding: 32px;
+  padding: 40px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.optionCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.15);
 }
 
 .optionTitle {
@@ -228,21 +82,23 @@
 .optionDescription {
   color: var(--gray-600);
   text-align: center;
-  margin-bottom: 24px;
-  line-height: 1.5;
+  margin-bottom: 32px;
+  line-height: 1.6;
+  font-size: 1rem;
 }
 
-.separator {
+/* ========================================
+   FORMULÁRIOS
+   ======================================== */
+.form {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--gray-400);
-  font-weight: 600;
-  font-size: 1.2rem;
-  padding: 0 20px;
-  height: 100px;
+  flex-direction: column;
+  gap: 20px;
 }
 
+/* ========================================
+   MENSAGENS DE ERRO
+   ======================================== */
 .error {
   background-color: #fef2f2;
   color: #dc2626;
@@ -250,66 +106,91 @@
   border-radius: 8px;
   border: 1px solid #fecaca;
   margin-bottom: 20px;
-  font-size: 0.875rem;
+  font-size: 0.9rem;
   text-align: center;
+}
+
+/* ========================================
+   SEÇÃO DE INFORMAÇÕES
+   ======================================== */
+.info {
+  margin-top: 60px;
+  background: var(--white);
+  border-radius: 16px;
+  padding: 40px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+}
+
+.info h3 {
+  color: var(--secondary-blue);
+  margin-bottom: 30px;
+  font-size: 1.5rem;
+  text-align: center;
+  font-weight: 700;
 }
 
 .infoGrid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
-  margin-top: 24px;
+  gap: 30px;
 }
 
 .infoItem {
   text-align: center;
-  padding: 20px;
-  background: var(--white);
+  padding: 24px;
+  background: var(--very-light-blue);
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s ease;
+}
+
+.infoItem:hover {
+  transform: translateY(-4px);
 }
 
 .infoIcon {
-  font-size: 2rem;
+  font-size: 2.5rem;
   display: block;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 .infoItem h4 {
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   font-weight: 600;
   color: var(--secondary-blue);
   margin-bottom: 8px;
 }
 
 .infoItem p {
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   color: var(--gray-600);
-  line-height: 1.4;
+  line-height: 1.5;
 }
 
-/* Modal styles */
+/* ========================================
+   MODAL DE SUCESSO
+   ======================================== */
 .modalOverlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
   padding: 20px;
+  backdrop-filter: blur(4px);
 }
 
 .successCard {
   background: var(--white);
-  border-radius: 16px;
+  border-radius: 20px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   padding: 48px;
   text-align: center;
-  max-width: 500px;
+  max-width: 550px;
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
@@ -318,74 +199,115 @@
 .successIcon {
   font-size: 4rem;
   margin-bottom: 24px;
+  animation: bounce 0.6s ease;
 }
 
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-20px); }
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--secondary-blue);
+  margin-bottom: 16px;
+}
+
+.subtitle {
+  font-size: 1.1rem;
+  color: var(--gray-600);
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+/* ========================================
+   SEÇÃO DE CONVITE
+   ======================================== */
 .inviteSection {
   background: var(--very-light-blue);
   border-radius: 12px;
-  padding: 24px;
+  padding: 32px;
   margin: 32px 0;
 }
 
 .inviteSection h2 {
-  font-size: 1.3rem;
+  font-size: 1.4rem;
   color: var(--secondary-blue);
-  margin-bottom: 16px;
+  margin-bottom: 20px;
+  font-weight: 700;
 }
 
 .codeContainer {
   display: flex;
   align-items: center;
-  gap: 12px;
   justify-content: center;
-  margin-bottom: 16px;
+  gap: 12px;
+  margin-bottom: 20px;
 }
 
 .inviteCode {
   font-family: 'Courier New', monospace;
-  font-size: 1.8rem;
+  font-size: 2rem;
   font-weight: bold;
   color: var(--primary-blue);
   background: var(--white);
-  padding: 12px 20px;
-  border-radius: 8px;
-  border: 2px solid var(--light-blue);
-  letter-spacing: 2px;
+  padding: 16px 28px;
+  border-radius: 10px;
+  border: 3px solid var(--primary-blue);
+  letter-spacing: 3px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .copyButton {
   background: var(--primary-blue);
   color: var(--white);
   border: none;
-  padding: 10px 16px;
+  padding: 12px 20px;
   border-radius: 8px;
   cursor: pointer;
-  font-size: 0.9rem;
-  transition: background-color 0.3s ease;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .copyButton:hover {
   background: var(--secondary-blue);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.copyButton:active {
+  transform: translateY(0);
 }
 
 .codeInfo {
   color: var(--gray-600);
-  font-size: 0.9rem;
-  line-height: 1.5;
+  font-size: 0.95rem;
+  line-height: 1.6;
 }
 
+/* ========================================
+   AÇÕES/BOTÕES
+   ======================================== */
 .actions {
   display: flex;
   gap: 16px;
   justify-content: center;
   flex-wrap: wrap;
+  margin-top: 24px;
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
+/* ========================================
+   RESPONSIVIDADE - TABLET
+   ======================================== */
+@media (max-width: 992px) {
   .optionsContainer {
     grid-template-columns: 1fr;
-    gap: 24px;
+    gap: 32px;
+    max-width: 600px;
+    margin: 0 auto;
   }
   
   .separator {
@@ -394,14 +316,103 @@
   
   .infoGrid {
     grid-template-columns: 1fr;
-    gap: 16px;
+    gap: 20px;
+  }
+}
+
+/* ========================================
+   RESPONSIVIDADE - MOBILE
+   ======================================== */
+@media (max-width: 768px) {
+  .container {
+    padding: 15px;
+  }
+  
+  .optionCard {
+    padding: 30px 20px;
+  }
+  
+  .optionTitle {
+    font-size: 1.3rem;
+  }
+  
+  .optionDescription {
+    font-size: 0.95rem;
+  }
+  
+  .info {
+    padding: 30px 20px;
+    margin-top: 40px;
+  }
+  
+  .info h3 {
+    font-size: 1.3rem;
   }
   
   .successCard {
     padding: 32px 24px;
   }
   
+  .title {
+    font-size: 1.6rem;
+  }
+  
+  .subtitle {
+    font-size: 1rem;
+  }
+  
   .inviteCode {
+    font-size: 1.5rem;
+    padding: 12px 20px;
+    letter-spacing: 2px;
+  }
+  
+  .codeContainer {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .copyButton {
+    width: 100%;
+  }
+  
+  .actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .actions a,
+  .actions button {
+    width: 100%;
+  }
+}
+
+/* ========================================
+   RESPONSIVIDADE - MOBILE PEQUENO
+   ======================================== */
+@media (max-width: 480px) {
+  .container {
+    padding: 10px;
+  }
+  
+  .header {
+    margin-bottom: 20px;
+  }
+  
+  .optionCard {
+    padding: 24px 16px;
+  }
+  
+  .title {
     font-size: 1.4rem;
+  }
+  
+  .inviteCode {
+    font-size: 1.3rem;
+    padding: 10px 16px;
+  }
+  
+  .successIcon {
+    font-size: 3rem;
   }
 }

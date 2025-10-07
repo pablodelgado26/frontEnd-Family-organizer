@@ -1,80 +1,109 @@
 'use client';
 
 import { useState, useEffect, createContext, useContext } from 'react';
-import { familyGroupService } from '../services/api';
+import axios from 'axios';
 import { useAuth } from './AuthContext';
 
 const FamilyContext = createContext({});
 
+// Configuração do axios
+const api = axios.create({
+  baseURL: 'http://localhost:4000',
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
 export function FamilyProvider({ children }) {
   const { user } = useAuth();
-  const [currentGroup, setCurrentGroup] = useState(null);
-  const [groups, setGroups] = useState([]);
+  const [selectedFamily, setSelectedFamily] = useState(null);
+  const [families, setFamilies] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Carregar grupos do usuário
-  const loadUserGroups = async () => {
-    if (!user) return;
-    
+  // Carregar famílias do usuário
+  const loadUserFamilies = async () => {
+    if (!user) {
+      setFamilies([]);
+      setSelectedFamily(null);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
-      const response = await familyGroupService.getMyGroups();
-      const userGroups = response.data;
+      const token = localStorage.getItem('token');
+      const response = await api.get('/family-groups', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
       
-      setGroups(userGroups);
-      
-      // Se não há grupo atual mas há grupos disponíveis, selecionar o primeiro
-      if (!currentGroup && userGroups.length > 0) {
-        setCurrentGroup(userGroups[0]);
-        localStorage.setItem('currentGroupId', userGroups[0].id.toString());
+      // A API retorna { message: "...", familyGroups: [...] }
+      const userFamilies = response.data.familyGroups || response.data || [];
+
+      setFamilies(userFamilies);
+
+      // Definir a família selecionada: prioriza a salva no localStorage, senão pega a primeira
+      const savedFamilyId = localStorage.getItem('selectedFamilyId');
+
+      let familyToSet = null;
+      if (savedFamilyId) {
+        familyToSet = userFamilies.find(family => family.id.toString() === savedFamilyId);
+      }
+      if (!familyToSet && userFamilies.length > 0) {
+        familyToSet = userFamilies[0];
+      }
+
+      if (familyToSet) {
+        setSelectedFamily(familyToSet);
+        localStorage.setItem('selectedFamilyId', familyToSet.id.toString());
+      } else {
+        setSelectedFamily(null);
+        localStorage.removeItem('selectedFamilyId');
       }
     } catch (error) {
-      console.error('Erro ao carregar grupos:', error);
+      console.error('FamilyContext: Erro ao carregar famílias:', error.message || error);
     } finally {
       setLoading(false);
     }
   };
 
-  // Carregar grupo salvo no localStorage
-  useEffect(() => {
-    if (user && groups.length > 0) {
-      const savedGroupId = localStorage.getItem('currentGroupId');
-      if (savedGroupId) {
-        const savedGroup = groups.find(group => group.id.toString() === savedGroupId);
-        if (savedGroup) {
-          setCurrentGroup(savedGroup);
-        }
-      }
-    }
-  }, [user, groups]);
-
-  // Carregar grupos quando usuário fizer login
+  // Carregar famílias quando usuário fizer login
   useEffect(() => {
     if (user) {
-      loadUserGroups();
+      loadUserFamilies();
     } else {
-      setGroups([]);
-      setCurrentGroup(null);
+      setFamilies([]);
+      setSelectedFamily(null);
       setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  const switchGroup = (group) => {
-    setCurrentGroup(group);
-    localStorage.setItem('currentGroupId', group.id.toString());
+  const selectFamily = (family) => {
+    setSelectedFamily(family);
+    localStorage.setItem('selectedFamilyId', family.id.toString());
   };
 
-  const refreshGroups = () => {
-    loadUserGroups();
+  const isAdmin = () => {
+    return selectedFamily?.role === 'admin';
+  };
+
+  const refreshFamilies = async () => {
+    await loadUserFamilies();
   };
 
   const value = {
-    currentGroup,
-    groups,
+    selectedFamily,
+    families,
     loading,
-    switchGroup,
-    refreshGroups,
+    selectFamily,
+    isAdmin,
+    refreshFamilies,
+    // Aliases para compatibilidade com código existente
+    currentGroup: selectedFamily,
+    groups: families,
+    switchGroup: selectFamily,
+    refreshGroups: refreshFamilies,
   };
 
   return (
