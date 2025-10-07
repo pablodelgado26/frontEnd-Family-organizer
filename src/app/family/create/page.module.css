@@ -3,26 +3,37 @@
    ======================================== */
 .container {
   min-height: 100vh;
-  background: linear-gradient(135deg, var(--very-light-blue) 0%, var(--light-blue) 100%);
+  background: linear-gradient(135deg, #e6f2ff 0%, #cce5ff 100%);
   padding: 20px;
+  display: flex;
+  flex-direction: column;
 }
 
 /* ========================================
    HEADER E NAVEGAÇÃO
    ======================================== */
 .header {
-  margin-bottom: 40px;
+  margin-bottom: 30px;
+  padding: 0 20px;
 }
 
 .backLink {
   color: var(--primary-blue);
   font-weight: 600;
   text-decoration: none;
-  transition: color 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.5);
 }
 
 .backLink:hover {
   color: var(--secondary-blue);
+  background: var(--white);
+  transform: translateX(-4px);
 }
 
 /* ========================================
@@ -30,17 +41,19 @@
    ======================================== */
 .formContainer {
   display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  min-height: calc(100vh - 120px);
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  gap: 60px;
 }
 
 .optionsContainer {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   gap: 40px;
-  align-items: flex-start;
-  max-width: 1200px;
+  align-items: stretch;
   width: 100%;
 }
 
@@ -49,10 +62,27 @@
   align-items: center;
   justify-content: center;
   color: var(--gray-400);
-  font-weight: 600;
-  font-size: 1.2rem;
-  padding: 0 20px;
-  min-height: 200px;
+  font-weight: 700;
+  font-size: 1.3rem;
+  padding: 0 30px;
+  position: relative;
+}
+
+.separator::before,
+.separator::after {
+  content: '';
+  position: absolute;
+  width: 1px;
+  height: 100%;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    var(--gray-300) 20%,
+    var(--gray-300) 80%,
+    transparent 100%
+  );
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 /* ========================================
@@ -60,31 +90,49 @@
    ======================================== */
 .optionCard {
   background: var(--white);
-  border-radius: 16px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  border-radius: 20px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
   padding: 40px;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px solid transparent;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .optionCard:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.15);
+  transform: translateY(-6px);
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.12);
+  border-color: var(--primary-blue);
 }
 
 .optionTitle {
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: 1.8rem;
+  font-weight: 800;
   color: var(--secondary-blue);
-  margin-bottom: 12px;
+  margin-bottom: 16px;
   text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.optionTitle::before {
+  content: '👨‍👩‍👧‍👦';
+  font-size: 2rem;
+}
+
+.optionCard:last-child .optionTitle::before {
+  content: '🔗';
 }
 
 .optionDescription {
   color: var(--gray-600);
   text-align: center;
   margin-bottom: 32px;
-  line-height: 1.6;
-  font-size: 1rem;
+  line-height: 1.7;
+  font-size: 1.05rem;
 }
 
 /* ========================================
@@ -93,40 +141,119 @@
 .form {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
+  flex: 1;
+}
+
+.form input {
+  width: 100%;
+  padding: 14px 18px;
+  border: 2px solid var(--gray-200);
+  border-radius: 10px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  background: var(--very-light-blue);
+}
+
+.form input:focus {
+  outline: none;
+  border-color: var(--primary-blue);
+  background: var(--white);
+  box-shadow: 0 0 0 4px rgba(44, 108, 194, 0.1);
+}
+
+.form label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: var(--secondary-blue);
+  font-size: 0.95rem;
+}
+
+.form button[type="submit"] {
+  margin-top: auto;
+  padding: 14px 24px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.form button[type="submit"]:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+.form button[type="submit"]:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
 }
 
 /* ========================================
    MENSAGENS DE ERRO
    ======================================== */
 .error {
-  background-color: #fef2f2;
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
   color: #dc2626;
-  padding: 12px 16px;
-  border-radius: 8px;
-  border: 1px solid #fecaca;
+  padding: 14px 18px;
+  border-radius: 10px;
+  border: 2px solid #fca5a5;
   margin-bottom: 20px;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   text-align: center;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  animation: slideDown 0.3s ease;
+}
+
+.error::before {
+  content: '⚠️';
+  font-size: 1.2rem;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ========================================
    SEÇÃO DE INFORMAÇÕES
    ======================================== */
 .info {
-  margin-top: 60px;
   background: var(--white);
-  border-radius: 16px;
-  padding: 40px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  border-radius: 20px;
+  padding: 50px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+  width: 100%;
+  border: 2px solid var(--gray-100);
 }
 
 .info h3 {
   color: var(--secondary-blue);
-  margin-bottom: 30px;
-  font-size: 1.5rem;
+  margin-bottom: 40px;
+  font-size: 1.8rem;
   text-align: center;
-  font-weight: 700;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.info h3::before {
+  content: '💡';
+  font-size: 2rem;
 }
 
 .infoGrid {
@@ -137,33 +264,50 @@
 
 .infoItem {
   text-align: center;
-  padding: 24px;
-  background: var(--very-light-blue);
-  border-radius: 12px;
-  transition: transform 0.3s ease;
+  padding: 30px 24px;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e6f2ff 100%);
+  border-radius: 16px;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px solid transparent;
 }
 
 .infoItem:hover {
-  transform: translateY(-4px);
+  transform: translateY(-6px);
+  border-color: var(--primary-blue);
+  box-shadow: 0 12px 30px rgba(44, 108, 194, 0.15);
 }
 
 .infoIcon {
-  font-size: 2.5rem;
+  font-size: 3rem;
   display: block;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.infoItem:nth-child(2) .infoIcon {
+  animation-delay: 0.3s;
+}
+
+.infoItem:nth-child(3) .infoIcon {
+  animation-delay: 0.6s;
 }
 
 .infoItem h4 {
-  font-size: 1.2rem;
-  font-weight: 600;
+  font-size: 1.3rem;
+  font-weight: 700;
   color: var(--secondary-blue);
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 
 .infoItem p {
-  font-size: 0.95rem;
+  font-size: 1rem;
   color: var(--gray-600);
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
 /* ========================================
@@ -305,7 +449,7 @@
 @media (max-width: 992px) {
   .optionsContainer {
     grid-template-columns: 1fr;
-    gap: 32px;
+    gap: 40px;
     max-width: 600px;
     margin: 0 auto;
   }
@@ -316,7 +460,11 @@
   
   .infoGrid {
     grid-template-columns: 1fr;
-    gap: 20px;
+    gap: 24px;
+  }
+
+  .info {
+    padding: 40px 30px;
   }
 }
 
@@ -328,12 +476,21 @@
     padding: 15px;
   }
   
+  .header {
+    margin-bottom: 20px;
+    padding: 0 10px;
+  }
+  
   .optionCard {
-    padding: 30px 20px;
+    padding: 30px 24px;
   }
   
   .optionTitle {
-    font-size: 1.3rem;
+    font-size: 1.5rem;
+  }
+
+  .optionTitle::before {
+    font-size: 1.5rem;
   }
   
   .optionDescription {
@@ -342,11 +499,18 @@
   
   .info {
     padding: 30px 20px;
-    margin-top: 40px;
   }
   
   .info h3 {
-    font-size: 1.3rem;
+    font-size: 1.4rem;
+  }
+
+  .info h3::before {
+    font-size: 1.6rem;
+  }
+
+  .infoIcon {
+    font-size: 2.5rem;
   }
   
   .successCard {
@@ -396,11 +560,50 @@
   }
   
   .header {
-    margin-bottom: 20px;
+    margin-bottom: 15px;
   }
   
   .optionCard {
     padding: 24px 16px;
+    border-radius: 16px;
+  }
+  
+  .optionTitle {
+    font-size: 1.3rem;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .form input {
+    padding: 12px 16px;
+  }
+
+  .form button[type="submit"] {
+    padding: 12px 20px;
+    font-size: 1rem;
+  }
+  
+  .info {
+    padding: 24px 16px;
+    border-radius: 16px;
+  }
+
+  .info h3 {
+    font-size: 1.2rem;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .infoItem {
+    padding: 20px 16px;
+  }
+
+  .infoItem h4 {
+    font-size: 1.1rem;
+  }
+
+  .infoItem p {
+    font-size: 0.9rem;
   }
   
   .title {

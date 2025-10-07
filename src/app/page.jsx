@@ -56,6 +56,25 @@ export default function HomePage() {
           setError(result.error);
         }
       } else {
+        // Validar campos de registro
+        if (!formData.name || !formData.email || !formData.password) {
+          setError('Por favor, preencha todos os campos obrigatórios');
+          setIsSubmitting(false);
+          return;
+        }
+
+        if (!formData.gender) {
+          setError('Por favor, selecione seu gênero');
+          setIsSubmitting(false);
+          return;
+        }
+
+        if (formData.password.length < 6) {
+          setError('A senha deve ter no mínimo 6 caracteres');
+          setIsSubmitting(false);
+          return;
+        }
+
         // Fazer registro
         const result = await register(
           formData.name, 

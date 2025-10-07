@@ -9,15 +9,6 @@ import { useFamily } from '../../contexts/FamilyContext';
 import ProtectedRoute from '../../components/ProtectedRoute';
 import styles from './page.module.css';
 
-// Configuração do axios
-const api = axios.create({
-  baseURL: 'http://localhost:4000',
-  timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
 function AgendaContent() {
   const router = useRouter();
   const { user } = useAuth();
@@ -52,11 +43,16 @@ function AgendaContent() {
       setError('');
 
       const token = localStorage.getItem('token');
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const config = {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      };
 
       const [appointmentsResponse, eventsResponse] = await Promise.all([
-        api.get(`/appointments/group/${currentGroup.id}`, { headers }).catch(() => ({ data: [] })),
-        api.get(`/events/group/${currentGroup.id}`, { headers }).catch(() => ({ data: [] }))
+        axios.get(`http://localhost:4000/appointments/group/${currentGroup.id}`, config).catch(() => ({ data: [] })),
+        axios.get(`http://localhost:4000/events/group/${currentGroup.id}`, config).catch(() => ({ data: [] }))
       ]);
 
       // Garantir que sejam arrays
@@ -113,17 +109,33 @@ function AgendaContent() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!currentGroup) return;
+    
+    console.log('=== SUBMIT INICIADO ===');
+    console.log('currentGroup:', currentGroup);
+    console.log('formData:', formData);
+    
+    if (!currentGroup) {
+      console.error('Erro: currentGroup não está definido');
+      setError('Nenhum grupo familiar selecionado');
+      return;
+    }
 
     setIsSubmitting(true);
     setError('');
 
     try {
       const token = localStorage.getItem('token');
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const config = {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      };
 
+      let response;
+      
       if (formData.type === 'consulta') {
-        await api.post('/appointments', {
+        const payload = {
           title: formData.title,
           doctor: formData.doctor,
           location: formData.location,
@@ -131,9 +143,11 @@ function AgendaContent() {
           time: formData.time,
           description: formData.notes,
           familyGroupId: currentGroup.id
-        }, { headers });
+        };
+        console.log('Criando consulta com payload:', payload);
+        response = await axios.post('http://localhost:4000/appointments', payload, config);
       } else {
-        await api.post('/events', {
+        const payload = {
           title: formData.title,
           description: formData.description,
           date: formData.date,
@@ -141,8 +155,13 @@ function AgendaContent() {
           location: formData.location,
           type: 'outro',
           familyGroupId: currentGroup.id
-        }, { headers });
+        };
+        console.log('Criando evento com payload:', payload);
+        response = await axios.post('http://localhost:4000/events', payload, config);
       }
+
+      console.log('Resposta da API:', response);
+      console.log('✅ Evento criado com sucesso!');
 
       // Recarregar eventos
       await loadEvents();
@@ -161,17 +180,24 @@ function AgendaContent() {
       setShowModal(false);
 
     } catch (error) {
-      console.error('Erro ao criar evento:', error);
-      setError(error.response?.data?.message || 'Erro ao criar evento');
+      console.error('❌ Erro ao criar evento:', error);
+      console.error('Error response:', error.response);
+      console.error('Error message:', error.message);
+      setError(error.response?.data?.message || error.message || 'Erro ao criar evento');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const openModal = (type) => {
+    if (!currentGroup) {
+      setError('Por favor, selecione um grupo familiar primeiro');
+      return;
+    }
     setModalType(type);
     setFormData({ ...formData, type });
     setShowModal(true);
+    setError('');
   };
 
   const formatDate = (dateString) => {
@@ -254,23 +280,39 @@ function AgendaContent() {
           <div>
             <Link href="/dashboard" className={styles.backLink}>← Voltar ao Painel</Link>
             <h1 className={styles.title}>Agenda Familiar</h1>
+            {currentGroup && (
+              <p className={styles.groupName}>Grupo: {currentGroup.name}</p>
+            )}
           </div>
           <div className={styles.headerActions}>
             <button 
               onClick={() => openModal('consulta')} 
               className="btn btn-secondary"
+              disabled={!currentGroup}
             >
               + Consulta
             </button>
             <button 
               onClick={() => openModal('evento')} 
               className="btn btn-primary"
+              disabled={!currentGroup}
             >
               + Evento
             </button>
           </div>
         </div>
       </header>
+
+      {/* Sem grupo selecionado */}
+      {!currentGroup && !loading && (
+        <div className={styles.noGroup}>
+          <h2>⚠️ Nenhum grupo familiar selecionado</h2>
+          <p>Por favor, selecione ou crie um grupo familiar no painel para usar a agenda.</p>
+          <Link href="/dashboard" className="btn btn-primary">
+            Ir para o Painel
+          </Link>
+        </div>
+      )}
 
       {/* Loading e Error States */}
       {loading && (

@@ -3,12 +3,12 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import axios from 'axios';
 import { useFamilies } from '@/hooks/useFamilies';
 import { FamilySelector } from '@/components/FamilySelector';
 import { CreateFamilyModal } from '@/components/CreateFamilyModal';
 import { JoinFamilyModal } from '@/components/JoinFamilyModal';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import api from '@/services/api';
 import styles from './page.module.css';
 
 function ManageFamilyContent() {
@@ -30,6 +30,7 @@ function ManageFamilyContent() {
   const [loadingTempCode, setLoadingTempCode] = useState(false);
   const [loadingMembers, setLoadingMembers] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(null);
+  const [copySuccess, setCopySuccess] = useState(null);
   const [error, setError] = useState('');
   const currentUserId = JSON.parse(localStorage.getItem('user'))?.id;
 
@@ -69,8 +70,11 @@ function ManageFamilyContent() {
     try {
       setLoadingMembers(true);
       const token = localStorage.getItem('token');
-      const response = await api.get(`/family-groups/${selectedFamily.id}`, {
-        headers: { Authorization: `Bearer ${token}` }
+      const response = await axios.get(`http://localhost:4000/family-groups/${selectedFamily.id}`, {
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
 
       const data = response.data;
@@ -103,9 +107,12 @@ function ManageFamilyContent() {
 
   const handleJoinFamilyTemp = async (tempInviteCode) => {
     try {
+      console.log('Tentando entrar na família com código temporário:', tempInviteCode);
       await joinFamilyTemp(tempInviteCode);
+      console.log('Entrada na família bem-sucedida');
       alert('Você entrou na família com sucesso!');
     } catch (error) {
+      console.error('Erro ao entrar na família:', error);
       throw error;
     }
   };
@@ -129,24 +136,41 @@ function ManageFamilyContent() {
   };
 
   const generateTempCode = async () => {
-    if (!selectedFamily) return;
+    if (!selectedFamily) {
+      console.error('Nenhuma família selecionada');
+      setError('Nenhuma família selecionada');
+      return;
+    }
+
+    if (!isAdmin()) {
+      console.error('Usuário não é admin');
+      setError('Apenas administradores podem gerar códigos');
+      return;
+    }
 
     try {
       setLoadingTempCode(true);
+      setError('');
       const token = localStorage.getItem('token');
 
-      const response = await api.post(
-        `/family-groups/${selectedFamily.id}/temp-invite`,
+      console.log('Gerando código temporário para família:', selectedFamily.id);
+
+      const response = await axios.post(
+        `http://localhost:4000/family-groups/${selectedFamily.id}/temp-invite`,
         {},
         {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
         }
       );
 
       const data = response.data;
+      console.log('Código temporário gerado:', data);
       setTempCode(data);
-      setError('');
     } catch (error) {
+      console.error('Erro ao gerar código:', error);
       setError(error.response?.data?.error || 'Erro ao gerar código temporário');
     } finally {
       setLoadingTempCode(false);
@@ -158,10 +182,13 @@ function ManageFamilyContent() {
 
     try {
       const token = localStorage.getItem('token');
-      await api.delete(
-        `/family-groups/${selectedFamily.id}/members/${userId}`,
+      await axios.delete(
+        `http://localhost:4000/family-groups/${selectedFamily.id}/members/${userId}`,
         {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
         }
       );
 
@@ -172,9 +199,23 @@ function ManageFamilyContent() {
     }
   };
 
-  const copyToClipboard = (text, label) => {
-    navigator.clipboard.writeText(text);
-    alert(`${label} copiado!`);
+  const copyToClipboard = async (text, type) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopySuccess(type);
+      setTimeout(() => setCopySuccess(null), 2000);
+    } catch (error) {
+      alert('Erro ao copiar código');
+    }
+  };
+
+  const formatExpiryTime = (expiresAt) => {
+    if (!expiresAt) return '--:--';
+    const date = new Date(expiresAt);
+    return date.toLocaleTimeString('pt-BR', { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
   };
 
   if (families.length === 0) {
@@ -261,15 +302,21 @@ function ManageFamilyContent() {
             Ideal para convites rápidos e seguros. Apenas você (admin) pode gerar códigos.
           </p>
 
-          {tempInviteCode && timeRemaining !== 'Expirado' ? (
+          {!isAdmin() ? (
+            <div className={styles.noCode}>
+              <p className={styles.noCodeText}>
+                🔒 Apenas administradores da família podem gerar códigos de convite temporários.
+              </p>
+            </div>
+          ) : tempCode?.code && timeRemaining !== 'Expirado' ? (
             <>
               <div className={styles.codeDisplay}>
                 <div className={styles.codeBox}>
                   <span className={styles.codeLabel}>Código:</span>
-                  <span className={styles.codeValue}>{tempInviteCode}</span>
+                  <span className={styles.codeValue}>{tempCode.code}</span>
                 </div>
                 <button
-                  onClick={() => copyToClipboard(tempInviteCode, 'temporary')}
+                  onClick={() => copyToClipboard(tempCode.code, 'temporary')}
                   className={styles.copyBtn}
                   disabled={copySuccess === 'temporary'}
                 >
@@ -285,18 +332,18 @@ function ManageFamilyContent() {
                 <div className={styles.expiryDetail}>
                   <span className={styles.expiryLabel}>🕐 Expira às:</span>
                   <span className={styles.expiryValue}>
-                    {formatExpiryTime(tempCodeExpiry)}
+                    {formatExpiryTime(tempCode.expiresAt)}
                   </span>
                 </div>
               </div>
 
               <button
                 onClick={generateTempCode}
-                className="btn btn-secondary"
-                disabled={isLoading}
+                className={styles.btnPrimary}
+                disabled={loadingTempCode}
                 style={{ marginTop: '16px' }}
               >
-                {isLoading ? 'Gerando...' : '🔄 Gerar Novo Código'}
+                {loadingTempCode ? 'Gerando...' : '🔄 Gerar Novo Código'}
               </button>
             </>
           ) : (
@@ -306,48 +353,63 @@ function ManageFamilyContent() {
               </p>
               <button
                 onClick={generateTempCode}
-                className="btn btn-primary"
-                disabled={isLoading}
+                className={styles.btnPrimary}
+                disabled={loadingTempCode}
               >
-                {isLoading ? 'Gerando...' : '✨ Gerar Código de Convite'}
+                {loadingTempCode ? 'Gerando...' : '✨ Gerar Código de Convite'}
               </button>
             </div>
           )}
         </div>
 
         {/* Informações */}
-        <div className={styles.infoCard}>
-          <h3 className={styles.infoTitle}>ℹ️ Como funciona?</h3>
+        <div className={styles.infoSection}>
+          <div className={styles.infoHeader}>
+            <span className={styles.infoHeaderIcon}>ℹ️</span>
+            <h3 className={styles.infoHeaderTitle}>Como funciona?</h3>
+          </div>
           <div className={styles.infoGrid}>
-            <div className={styles.infoItem}>
-              <span className={styles.infoIcon}>⚡</span>
-              <h4>Gere Quando Precisar</h4>
-              <p>Clique no botão para gerar um código novo sempre que quiser convidar alguém.</p>
+            <div className={styles.infoCard}>
+              <div className={styles.infoCardHeader}>
+                <div className={styles.infoIcon}>⚡</div>
+                <h4 className={styles.infoTitle}>Gere Quando Precisar</h4>
+              </div>
+              <p className={styles.infoDescription}>Clique no botão para gerar um código novo sempre que quiser convidar alguém.</p>
             </div>
-            <div className={styles.infoItem}>
-              <span className={styles.infoIcon}>⏱️</span>
-              <h4>15 Minutos</h4>
-              <p>Cada código é válido por apenas 15 minutos. Depois disso, expira automaticamente.</p>
+            <div className={styles.infoCard}>
+              <div className={styles.infoCardHeader}>
+                <div className={styles.infoIcon}>⏱️</div>
+                <h4 className={styles.infoTitle}>15 Minutos</h4>
+              </div>
+              <p className={styles.infoDescription}>Cada código é válido por apenas 15 minutos. Depois disso, expira automaticamente.</p>
             </div>
-            <div className={styles.infoItem}>
-              <span className={styles.infoIcon}>🔒</span>
-              <h4>Seguro</h4>
-              <p>Códigos temporários são mais seguros. Se alguém descobrir, logo ficará inválido.</p>
+            <div className={styles.infoCard}>
+              <div className={styles.infoCardHeader}>
+                <div className={styles.infoIcon}>🔒</div>
+                <h4 className={styles.infoTitle}>Seguro</h4>
+              </div>
+              <p className={styles.infoDescription}>Códigos temporários são mais seguros. Se alguém descobrir, logo ficará inválido.</p>
             </div>
-            <div className={styles.infoItem}>
-              <span className={styles.infoIcon}>♾️</span>
-              <h4>Múltiplos Usos</h4>
-              <p>Enquanto válido, o código pode ser usado por várias pessoas para entrar no grupo.</p>
+            <div className={styles.infoCard}>
+              <div className={styles.infoCardHeader}>
+                <div className={styles.infoIcon}>♾️</div>
+                <h4 className={styles.infoTitle}>Múltiplos Usos</h4>
+              </div>
+              <p className={styles.infoDescription}>Enquanto válido, o código pode ser usado por várias pessoas para entrar no grupo.</p>
             </div>
-            <div className={styles.infoItem}>
-              <span className={styles.infoIcon}>�</span>
-              <h4>Regenere</h4>
-              <p>Pode gerar novos códigos quantas vezes quiser. O código anterior será substituído.</p>
+            <div className={styles.infoCard}>
+              <div className={styles.infoCardHeader}>
+                <div className={styles.infoIcon}>🔄</div>
+                <h4 className={styles.infoTitle}>Regenere</h4>
+              </div>
+              <p className={styles.infoDescription}>Pode gerar novos códigos quantas vezes quiser. O código anterior será substituído.</p>
             </div>
-            <div className={styles.infoItem}>
-              <span className={styles.infoIcon}>👥</span>
-              <h4>Apenas Admin</h4>
-              <p>Somente administradores do grupo podem gerar códigos de convite.</p>
+            <div className={styles.infoCard}>
+              <div className={styles.infoCardHeader}>
+                <div className={styles.infoIcon}>👥</div>
+                <h4 className={styles.infoTitle}>Apenas Admin</h4>
+              </div>
+              <p className={styles.infoDescription}>Somente administradores do grupo podem gerar códigos de convite.</p>
             </div>
           </div>
         </div>

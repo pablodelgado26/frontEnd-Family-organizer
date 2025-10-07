@@ -2,11 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import api from '@/services/api';
+import { useRouter } from 'next/navigation';
+import axios from 'axios';
+import { useFamily } from '@/contexts/FamilyContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import styles from './page.module.css';
 
-export default function Notes() {
+function NotesContent() {
+  const router = useRouter();
+  const { selectedFamily, loading: familyLoading } = useFamily();
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -22,26 +26,33 @@ export default function Notes() {
     pinned: false
   });
 
+  // Redirecionar se não há família selecionada
+  useEffect(() => {
+    if (!familyLoading && !selectedFamily) {
+      alert('Você precisa criar ou entrar em uma família primeiro');
+      router.push('/family/create');
+    }
+  }, [selectedFamily, familyLoading, router]);
+
   // Buscar notas do backend
   useEffect(() => {
-    fetchNotes();
-  }, []);
+    if (selectedFamily) {
+      fetchNotes();
+    }
+  }, [selectedFamily]);
 
   const fetchNotes = async () => {
+    if (!selectedFamily) return;
+
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const user = JSON.parse(localStorage.getItem('user'));
-      const familyGroupId = user?.familyGroupId;
 
-      if (!familyGroupId) {
-        alert('Você precisa fazer parte de um grupo familiar para ver as notas');
-        setLoading(false);
-        return;
-      }
-
-      const response = await api.get(`/notes/group/${familyGroupId}`, {
-        headers: { Authorization: `Bearer ${token}` }
+      const response = await axios.get(`http://localhost:4000/notes/group/${selectedFamily.id}`, {
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
       setNotes(response.data.notes || response.data || []);
     } catch (error) {
@@ -73,19 +84,17 @@ export default function Notes() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    if (!selectedFamily) {
+      alert('Você precisa fazer parte de um grupo familiar');
+      return;
+    }
+    
     try {
       const token = localStorage.getItem('token');
-      const user = JSON.parse(localStorage.getItem('user'));
-      const familyGroupId = user?.familyGroupId;
-
-      if (!familyGroupId) {
-        alert('Você precisa fazer parte de um grupo familiar');
-        return;
-      }
       
       if (editingNote) {
         // Atualizar nota existente
-        await api.put(`/notes/${editingNote.id}`, 
+        await axios.put(`http://localhost:4000/notes/${editingNote.id}`, 
           {
             title: formData.title,
             content: formData.content,
@@ -93,22 +102,28 @@ export default function Notes() {
             category: formData.category
           },
           {
-            headers: { Authorization: `Bearer ${token}` }
+            headers: { 
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
           }
         );
         alert('Nota atualizada com sucesso!');
       } else {
         // Criar nova nota
-        await api.post('/notes', 
+        await axios.post('http://localhost:4000/notes', 
           {
             title: formData.title,
             content: formData.content,
             priority: formData.pinned ? 'alta' : 'normal',
             category: formData.category,
-            familyGroupId: familyGroupId
+            familyGroupId: selectedFamily.id
           },
           {
-            headers: { Authorization: `Bearer ${token}` }
+            headers: { 
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
           }
         );
         alert('Nota criada com sucesso!');
@@ -148,8 +163,11 @@ export default function Notes() {
     if (confirm('Tem certeza que deseja excluir esta anotação?')) {
       try {
         const token = localStorage.getItem('token');
-        await api.delete(`/notes/${noteId}`, {
-          headers: { Authorization: `Bearer ${token}` }
+        await axios.delete(`http://localhost:4000/notes/${noteId}`, {
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
         });
         alert('Nota excluída com sucesso!');
         await fetchNotes();
@@ -168,14 +186,19 @@ export default function Notes() {
       // Alternar entre alta e normal
       const newPriority = note.priority === 'alta' ? 'normal' : 'alta';
       
-      await api.put(`/notes/${noteId}`, 
+      await axios.put(`http://localhost:4000/notes/${noteId}`, 
         { 
           title: note.title,
           content: note.content,
           category: note.category,
           priority: newPriority
         },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { 
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          } 
+        }
       );
       
       await fetchNotes();
@@ -237,38 +260,44 @@ export default function Notes() {
         case 'title':
           return a.title.localeCompare(b.title);
         case 'author':
-          return (a.author || '').localeCompare(b.author || '');
+          const authorA = typeof a.author === 'object' ? a.author?.name || '' : a.author || '';
+          const authorB = typeof b.author === 'object' ? b.author?.name || '' : b.author || '';
+          return authorA.localeCompare(authorB);
         case 'date':
         default:
           return new Date(b.createdAt) - new Date(a.createdAt);
       }
     });
 
-  return (
-    <ProtectedRoute>
-      <div className={styles.container}>
-        {/* Header */}
-        <header className={styles.header}>
-          <div className={styles.headerContent}>
-            <div>
-              <Link href="/dashboard" className={styles.backLink}>← Voltar ao Painel</Link>
-              <h1 className={styles.title}>Anotações da Família</h1>
-            </div>
-            <button 
-              onClick={() => setShowModal(true)} 
-              className="btn btn-primary"
-            >
-              + Nova Anotação
-            </button>
-          </div>
-        </header>
+  if (loading || familyLoading) {
+    return <div className={styles.loading}>Carregando...</div>;
+  }
 
-        {loading ? (
-          <div className={styles.loading}>Carregando notas...</div>
-        ) : (
-          <div className={styles.notesLayout}>
-            {/* Sidebar */}
-            <aside className={styles.sidebar}>
+  if (!selectedFamily) {
+    return <div className={styles.loading}>Carregando família...</div>;
+  }
+
+  return (
+    <div className={styles.container}>
+      {/* Header */}
+      <header className={styles.header}>
+        <div className={styles.headerContent}>
+          <div>
+            <Link href="/dashboard" className={styles.backLink}>← Voltar ao Painel</Link>
+            <h1 className={styles.title}>Anotações da Família</h1>
+          </div>
+          <button 
+            onClick={() => setShowModal(true)} 
+            className="btn btn-primary"
+          >
+            + Nova Anotação
+          </button>
+        </div>
+      </header>
+
+      <div className={styles.notesLayout}>
+        {/* Sidebar */}
+        <aside className={styles.sidebar}>
           <div className={styles.searchSection}>
             <input
               type="text"
@@ -381,7 +410,7 @@ export default function Notes() {
                   
                   <div className={styles.noteFooter}>
                     <div className={styles.noteAuthor}>
-                      <span>Por {note.author || 'Desconhecido'}</span>
+                      <span>Por {typeof note.author === 'object' ? note.author?.name : note.author || 'Desconhecido'}</span>
                     </div>
                     <div className={styles.noteDate}>
                       {formatRelativeDate(note.createdAt || note.date)}
@@ -392,11 +421,10 @@ export default function Notes() {
             </div>
           )}
         </main>
-          </div>
-        )}
+      </div>
 
-        {/* Modal */}
-        {showModal && (
+      {/* Modal */}
+      {showModal && (
         <div className={styles.modalOverlay} onClick={() => resetForm()}>
           <div className={styles.modal} onClick={e => e.stopPropagation()}>
             <div className={styles.modalHeader}>
@@ -472,7 +500,14 @@ export default function Notes() {
           </div>
         </div>
       )}
-      </div>
+    </div>
+  );
+}
+
+export default function Notes() {
+  return (
+    <ProtectedRoute>
+      <NotesContent />
     </ProtectedRoute>
   );
 }

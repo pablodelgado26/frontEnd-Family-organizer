@@ -3,10 +3,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import axios from 'axios';
 import { useAuth } from '@/contexts/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import styles from './page.module.css';
-import api from '@/services/api';
 
 function ProfilePage() {
   const router = useRouter();
@@ -135,7 +135,7 @@ function ProfilePage() {
         submitData.append('newPassword', formData.newPassword);
       }
 
-      const response = await api.put('/users/profile', submitData, {
+      const response = await axios.put('http://localhost:4000/users/profile', submitData, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
@@ -369,7 +369,9 @@ function ProfilePage() {
                 <button
                   type="button"
                   className="btn btn-primary btn-lg btn-block"
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
                     setIsEditing(true);
                     setSuccess('');
                     setError('');

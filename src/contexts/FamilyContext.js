@@ -6,15 +6,6 @@ import { useAuth } from './AuthContext';
 
 const FamilyContext = createContext({});
 
-// Configuração do axios
-const api = axios.create({
-  baseURL: 'http://localhost:4000',
-  timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
 export function FamilyProvider({ children }) {
   const { user } = useAuth();
   const [selectedFamily, setSelectedFamily] = useState(null);
@@ -33,8 +24,11 @@ export function FamilyProvider({ children }) {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const response = await api.get('/family-groups', {
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      const response = await axios.get('http://localhost:4000/family-groups', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
       
       // A API retorna { message: "...", familyGroups: [...] }

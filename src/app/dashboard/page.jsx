@@ -9,15 +9,6 @@ import { useFamily } from '../../contexts/FamilyContext';
 import ProtectedRoute from '../../components/ProtectedRoute';
 import styles from './page.module.css';
 
-// Configuração do axios
-const api = axios.create({
-  baseURL: 'http://localhost:4000',
-  timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
 function DashboardContent() {
   const router = useRouter();
   const { user, logout } = useAuth();
@@ -43,17 +34,20 @@ function DashboardContent() {
       setError('');
 
       const token = localStorage.getItem('token');
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
 
       // Carregar dados em paralelo
       const [summaryResponse, todayResponse, statsResponse, upcomingAppts, upcomingEvts, notesResponse, photosResponse] = await Promise.all([
-        api.get(`/dashboard/group/${currentGroup.id}`, { headers }).catch(() => null),
-        api.get(`/dashboard/group/${currentGroup.id}/today`, { headers }).catch(() => null),
-        api.get(`/dashboard/group/${currentGroup.id}/stats`, { headers }).catch(() => null),
-        api.get(`/appointments/group/${currentGroup.id}/upcoming`, { headers }).catch(() => ({ data: [] })),
-        api.get(`/events/group/${currentGroup.id}/upcoming`, { headers }).catch(() => ({ data: [] })),
-        api.get(`/notes/group/${currentGroup.id}`, { headers }).catch(() => ({ data: [] })),
-        api.get(`/photos/group/${currentGroup.id}/recent`, { headers }).catch(() => ({ data: [] }))
+        axios.get(`http://localhost:4000/dashboard/group/${currentGroup.id}`, { headers }).catch(() => null),
+        axios.get(`http://localhost:4000/dashboard/group/${currentGroup.id}/today`, { headers }).catch(() => null),
+        axios.get(`http://localhost:4000/dashboard/group/${currentGroup.id}/stats`, { headers }).catch(() => null),
+        axios.get(`http://localhost:4000/appointments/group/${currentGroup.id}/upcoming`, { headers }).catch(() => ({ data: [] })),
+        axios.get(`http://localhost:4000/events/group/${currentGroup.id}/upcoming`, { headers }).catch(() => ({ data: [] })),
+        axios.get(`http://localhost:4000/notes/group/${currentGroup.id}`, { headers }).catch(() => ({ data: [] })),
+        axios.get(`http://localhost:4000/photos/group/${currentGroup.id}/recent`, { headers }).catch(() => ({ data: [] }))
       ]);
 
       setDashboardData({
@@ -89,12 +83,14 @@ function DashboardContent() {
       setUpcomingEvents(combinedEvents.slice(0, 5));
       
       // Garantir que notes e photos sejam arrays
-      const notes = Array.isArray(notesResponse?.data) 
-        ? notesResponse.data 
-        : [];
-      const photos = Array.isArray(photosResponse?.data) 
-        ? photosResponse.data 
-        : [];
+      const notesData = notesResponse?.data?.notes || notesResponse?.data || [];
+      const notes = Array.isArray(notesData) ? notesData : [];
+      
+      const photosData = photosResponse?.data?.photos || photosResponse?.data || [];
+      const photos = Array.isArray(photosData) ? photosData : [];
+      
+      console.log('📊 Dashboard: Notas carregadas:', notes.length);
+      console.log('📊 Dashboard: Fotos carregadas:', photos.length);
         
       setRecentNotes(notes.slice(0, 3));
       setRecentPhotos(photos.slice(0, 4));
@@ -113,11 +109,24 @@ function DashboardContent() {
     }
   }, [currentGroup]);
 
-  // Redirecionar se não há grupos
-  // Redirecionar se não há grupos: usar o loading do FamilyContext (familyLoading)
+  // Redirecionar se não há grupos - apenas na primeira vez e não em refresh
   useEffect(() => {
     if (!familyLoading && groups.length === 0 && currentGroup === null) {
-      router.push('/family/create');
+      // Verificar se é um refresh ou navegação direta
+      const isRefresh = performance.navigation?.type === 1 || 
+                        performance.getEntriesByType('navigation')[0]?.type === 'reload';
+      
+      // Não redirecionar se for um refresh
+      if (!isRefresh) {
+        const hasRedirected = localStorage.getItem('hasRedirectedToCreate');
+        if (!hasRedirected) {
+          localStorage.setItem('hasRedirectedToCreate', 'true');
+          router.push('/family/create');
+        }
+      }
+    } else if (groups.length > 0) {
+      // Limpar flag se já tem grupos
+      localStorage.removeItem('hasRedirectedToCreate');
     }
   }, [groups, currentGroup, familyLoading, router]);
 
@@ -231,8 +240,16 @@ function DashboardContent() {
             )}
           </div>
           <div className={styles.headerActions}>
-            <Link href="/family/manage" className={styles.manageBtn}>
-              🔗 Gerenciar Convites
+            <button 
+              onClick={loadDashboardData} 
+              className={styles.refreshBtn}
+              disabled={dataLoading}
+              title="Recarregar dados"
+            >
+              🔄 {dataLoading ? 'Carregando...' : 'Atualizar'}
+            </button>
+            <Link href="/family/create" className={styles.createFamilyBtn}>
+              ➕ Nova Família
             </Link>
             <span className={styles.welcomeText}>
               Olá, {user?.name?.split(' ')[0] || 'Usuário'}!
@@ -383,9 +400,11 @@ function DashboardContent() {
                         {note.content?.length > 100 ? '...' : ''}
                       </p>
                       <div className={styles.noteFooter}>
-                        <span className={styles.notePriority}>{note.priority || 'NORMAL'}</span>
+                        <span className={styles.notePriority}>
+                          {note.priority?.toUpperCase() || 'NORMAL'}
+                        </span>
                         <span className={styles.noteDate}>
-                          {formatDate(note.createdAt || note.date)}
+                          {formatDate(note.createdAt || note.date || new Date().toISOString())}
                         </span>
                       </div>
                     </div>

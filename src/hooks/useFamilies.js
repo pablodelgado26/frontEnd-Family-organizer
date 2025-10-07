@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import api from '@/services/api';
+import axios from 'axios';
 
 export function useFamilies() {
   const [families, setFamilies] = useState([]);
@@ -17,9 +17,10 @@ export function useFamilies() {
       setLoading(true);
       const token = localStorage.getItem('token');
       
-      const response = await api.get('/family-groups', {
+      const response = await axios.get('http://localhost:4000/family-groups', {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       });
       
@@ -57,7 +58,7 @@ export function useFamilies() {
     try {
       const token = localStorage.getItem('token');
       
-      const response = await api.post('/family-groups', 
+      const response = await axios.post('http://localhost:4000/family-groups', 
         { name },
         {
           headers: {
@@ -82,7 +83,7 @@ export function useFamilies() {
     try {
       const token = localStorage.getItem('token');
       
-      const response = await api.post('/family-groups/join', 
+      const response = await axios.post('http://localhost:4000/family-groups/join', 
         { inviteCode },
         {
           headers: {
@@ -110,7 +111,10 @@ export function useFamilies() {
     try {
       const token = localStorage.getItem('token');
       
-      const response = await api.post('/family-groups/join-temp', 
+      console.log('Hook: Enviando requisição para /family-groups/join-temp');
+      console.log('Hook: Código temporário:', tempInviteCode);
+      
+      const response = await axios.post('http://localhost:4000/family-groups/join-temp', 
         { tempInviteCode },
         {
           headers: {
@@ -119,6 +123,8 @@ export function useFamilies() {
           }
         }
       );
+      
+      console.log('Hook: Resposta recebida:', response.data);
       
       if (!response.data || response.status >= 400) {
         const error = response.data;
@@ -130,6 +136,7 @@ export function useFamilies() {
       
       return true;
     } catch (err) {
+      console.error('Hook: Erro ao entrar na família:', err);
       throw err;
     }
   };
@@ -138,9 +145,10 @@ export function useFamilies() {
     try {
       const token = localStorage.getItem('token');
       
-      const response = await api.delete(`/family-groups/${familyId}/leave`, {
+      const response = await axios.delete(`http://localhost:4000/family-groups/${familyId}/leave`, {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       });
       
